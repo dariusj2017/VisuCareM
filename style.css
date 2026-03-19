@@ -1,52 +1,82 @@
-body {
-  margin: 0;
-  background: #111;
-  color: #eee;
-  font-family: Arial;
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background: black;
 }
 
-header {
-  padding: 10px;
-  background: #222;
-  text-align: center;
+/* VIDEO – apverstas 180° */
+video {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    transform: rotate(180deg);
 }
 
-#cameraSection, #photoSection {
-  text-align: center;
-  padding: 10px;
+/* CANVAS – taip pat apverstas 180° */
+canvas {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    transform: rotate(180deg);
+    display: none;
 }
 
-#cameraControls, #photoControls {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+/* Gulsčiukas */
+#h-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100vw;
+    height: 4px;
+    background-color: red;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Kryžiukai */
+.cross {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-left: 2px solid white;
+    border-top: 2px solid white;
+    transform: translate(-50%, -50%) rotate(45deg);
+    pointer-events: none;
+    z-index: 9999;
+}
+
+#cross-left {
+    left: 25%;
+    top: 50%;
+}
+
+#cross-right {
+    left: 75%;
+    top: 50%;
+}
+
+/* Mygtukai */
+.controls {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 99999;
 }
 
 button {
-  padding: 10px 20px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 6px;
-}
-
-#canvasWrapper {
-  position: relative;
-  display: inline-block;
-}
-
-#photoCanvas, #overlayCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.hidden {
-  display: none;
-}
-
-#measurePanel {
-  padding: 20px;
-  background: #222;
+    padding: 12px 20px;
+    font-size: 18px;
+    border: none;
+    background: #00aaff;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
 }
