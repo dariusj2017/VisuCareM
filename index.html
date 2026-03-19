@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8">
+  <title>Optical Measure Pro</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+  <h1>Optical Measure Pro</h1>
+</header>
+
+<section id="cameraSection">
+  <video id="cameraView" autoplay playsinline></video>
+
+  <div id="cameraControls">
+    <button id="frontCam">Priekinė kamera</button>
+    <button id="backCam">Galinė kamera</button>
+    <button id="takePhoto">Fotografuoti</button>
+  </div>
+</section>
+
+<section id="photoSection" class="hidden">
+  <div id="canvasWrapper">
+    <canvas id="photoCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
+  </div>
+
+  <div id="photoControls">
+    <button id="autoDetect">Automatinis aptikimas</button>
+    <button id="editPoints">Taisyti taškus</button>
+    <button id="showMeasurements">Matavimai</button>
+    <button id="retake">Iš naujo</button>
+  </div>
+</section>
+
+<section id="measurePanel" class="hidden">
+  <h2>Matavimai</h2>
+  <div id="measurements"></div>
+</section>
+
+<script src="libs/mediapipe_iris.js"></script>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/iris.js"></script>
+<script src="js/calibration.js"></script>
+<script src="js/measure.js"></script>
+<script src="js/overlay.js"></script>
+
+</body>
+</html>
