@@ -1,29 +1,91 @@
+<!-- FILE: index.html -->
 <!DOCTYPE html>
 <html lang="lt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optikos Matavimas</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Optikos matavimai</title>
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-    <video id="video" autoplay playsinline></video>
-    <canvas id="photoCanvas"></canvas>
+  <!-- FRONT ekranas -->
+  <div id="front-screen" class="screen">
+    <h2>FRONT</h2>
+    <video id="video-front" autoplay playsinline></video>
+    <canvas id="canvas-front"></canvas>
+    <button id="front-freeze">Freeze FRONT</button>
+    <button id="front-to-side">Toliau į SIDE</button>
+  </div>
 
-    <!-- Gulsčiukas -->
-    <div id="h-line"></div>
+  <!-- SIDE ekranas -->
+  <div id="side-screen" class="screen" style="display:none;">
+    <h2>SIDE</h2>
+    <video id="video-side" autoplay playsinline></video>
+    <canvas id="canvas-side"></canvas>
+    <button id="side-freeze">Freeze SIDE</button>
+    <button id="side-to-check">Toliau į CHECK</button>
+  </div>
 
-    <!-- Kryžiukai statmenumui -->
-    <div id="cross-left" class="cross"></div>
-    <div id="cross-right" class="cross"></div>
+  <!-- CHECK ekranas -->
+  <div id="check-screen" class="screen" style="display:none;">
+    <div class="image-wrapper">
+      <img id="check-front-img" class="base-image">
 
-    <!-- Mygtukai -->
-    <div class="controls">
-        <button id="captureBtn">Fotografuoti</button>
-        <button id="resetBtn">Iš naujo</button>
+      <div id="pupil-left" class="handle pupil"></div>
+      <div id="pupil-right" class="handle pupil"></div>
+      <div id="marker-top" class="handle marker"></div>
+      <div id="frame-ref-line" class="ref-line"></div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="check-panel">
+      <h3>CHECK</h3>
+      <div>PD: <span id="pd-value"></span> mm</div>
+      <div>HOC L: <span id="hoc-left-value"></span> mm</div>
+      <div>HOC R: <span id="hoc-right-value"></span> mm</div>
+      <div>Pantoskopinis: <span id="panto-value"></span> °</div>
+      <div>Vertex: <span id="vertex-value"></span> mm</div>
+      <button id="to-results">Į RESULTS</button>
+    </div>
+  </div>
+
+  <!-- RESULTS ekranas -->
+  <div id="results-screen" class="screen" style="display:none;">
+    <div class="results-container">
+      <div class="results-row">
+        <div class="results-block">
+          <h3>Front</h3>
+          <img id="results-front-img" class="results-img">
+        </div>
+        <div class="results-block">
+          <h3>Side</h3>
+          <img id="results-side-img" class="results-img">
+        </div>
+      </div>
+
+      <div class="results-row">
+        <div class="results-table-block">
+          <h3>Matavimų suvestinė</h3>
+          <table class="results-table">
+            <tr><td>PD</td><td id="res-pd"></td></tr>
+            <tr><td>HOC L</td><td id="res-hoc-l"></td></tr>
+            <tr><td>HOC R</td><td id="res-hoc-r"></td></tr>
+            <tr><td>Pantoskopinis</td><td id="res-panto"></td></tr>
+            <tr><td>Vertex distance</td><td id="res-vertex"></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="results-row">
+        <button id="back-to-check">Atgal</button>
+        <button id="confirm-order">Patvirtinti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OpenCV -->
+  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+  <!-- Pagrindinis JS -->
+  <script type="module" src="js/check-results.js"></script>
 </body>
 </html>
