@@ -1,55 +1,29 @@
 <!DOCTYPE html>
 <html lang="lt">
 <head>
-  <meta charset="UTF-8">
-  <title>Optical Measure Pro</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optikos Matavimas</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<header>
-  <h1>Optical Measure Pro</h1>
-</header>
-
-<section id="cameraSection">
-  <video id="cameraView" autoplay playsinline></video>
-
-  <div id="cameraControls">
-    <button id="frontCam">Priekinė kamera</button>
-    <button id="backCam">Galinė kamera</button>
-    <button id="takePhoto">Fotografuoti</button>
-  </div>
-</section>
-
-<section id="photoSection" class="hidden">
-  <div id="canvasWrapper">
+    <video id="video" autoplay playsinline></video>
     <canvas id="photoCanvas"></canvas>
-    <canvas id="overlayCanvas"></canvas>
-  </div>
 
-  <div id="photoControls">
-    <button id="autoDetect">Automatinis aptikimas</button>
-    <button id="editPoints">Taisyti taškus</button>
-    <button id="showMeasurements">Matavimai</button>
-    <button id="retake">Iš naujo</button>
-  </div>
-</section>
+    <!-- Gulsčiukas -->
+    <div id="h-line"></div>
 
-<section id="measurePanel" class="hidden">
-  <h2>Matavimai</h2>
-  <div id="measurements"></div>
-</section>
+    <!-- Kryžiukai statmenumui -->
+    <div id="cross-left" class="cross"></div>
+    <div id="cross-right" class="cross"></div>
 
-<script src="libs/mediapipe_iris.js"></script>
+    <!-- Mygtukai -->
+    <div class="controls">
+        <button id="captureBtn">Fotografuoti</button>
+        <button id="resetBtn">Iš naujo</button>
+    </div>
 
-<script src="js/state.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/camera.js"></script>
-<script src="js/iris.js"></script>
-<script src="js/calibration.js"></script>
-<script src="js/measure.js"></script>
-<script src="js/overlay.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>
