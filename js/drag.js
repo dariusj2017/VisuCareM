@@ -1,33 +1,43 @@
 // FILE: js/drag.js
+// Paskirtis: bendras drag & drop mechanizmas rankiniam taškų patikslinimui
 
 export function makeDraggable(el, onMove) {
-  let dragging = false, offsetX=0, offsetY=0;
+  let dragging = false;
+  let offsetX = 0, offsetY = 0;
 
-  const start = (x,y)=>{
+  // Pradžia – pelė arba touch
+  const start = (x, y) => {
     dragging = true;
     const rect = el.getBoundingClientRect();
     offsetX = x - rect.left;
     offsetY = y - rect.top;
   };
 
-  const move = (x,y)=>{
+  // Judėjimas – atnaujinam poziciją ir kviečiam callback
+  const move = (x, y) => {
     if (!dragging) return;
-    el.style.left = `${x - offsetX}px`;
-    el.style.top = `${y - offsetY}px`;
-    if (onMove) onMove(x - offsetX, y - offsetY);
+    const left = x - offsetX;
+    const top = y - offsetY;
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    if (onMove) onMove(left, top);
   };
 
-  const end = ()=>{ dragging = false; };
+  const end = () => { dragging = false; };
 
-  el.addEventListener("mousedown", e=>start(e.clientX,e.clientY));
-  window.addEventListener("mousemove", e=>move(e.clientX,e.clientY));
+  // Mouse events
+  el.addEventListener("mousedown", e => start(e.clientX, e.clientY));
+  window.addEventListener("mousemove", e => move(e.clientX, e.clientY));
   window.addEventListener("mouseup", end);
 
-  el.addEventListener("touchstart", e=>{
-    const t=e.touches[0]; start(t.clientX,t.clientY);
+  // Touch events
+  el.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    start(t.clientX, t.clientY);
   });
-  window.addEventListener("touchmove", e=>{
-    const t=e.touches[0]; move(t.clientX,t.clientY);
+  window.addEventListener("touchmove", e => {
+    const t = e.touches[0];
+    move(t.clientX, t.clientY);
   });
   window.addEventListener("touchend", end);
 }

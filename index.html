@@ -1,64 +1,99 @@
 <!-- FILE: index.html -->
+<!-- Paskirtis: pagrindinis puslapis, visi ekranai (FRONT, SIDE, CHECK, RESULTS) ir logotipo headeris -->
+
 <!DOCTYPE html>
 <html lang="lt">
 <head>
   <meta charset="UTF-8">
-  <title>Optikos matavimai</title>
+  <title>Regos Priežiūra – Matavimo Sistema</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-  <!-- FRONT ekranas -->
-  <div id="front-screen" class="screen">
-    <h2>FRONT</h2>
-    <video id="video-front" autoplay playsinline></video>
-    <canvas id="canvas-front"></canvas>
-    <button id="front-freeze">Freeze FRONT</button>
-    <button id="front-to-side">Toliau į SIDE</button>
+  <!-- LOGOTIPO HEADERIS -->
+  <div class="header">
+    <!-- Čia įkelsi savo PNG logotipą į img/logo-regos-prieziura.png -->
+	<img src="img/regos-prieziuros-logotipas.png" class="logo" alt="Regos Priežiūra">
+    <div class="title">Regos Priežiūra – Matavimo Sistema</div>
   </div>
 
-  <!-- SIDE ekranas -->
-  <div id="side-screen" class="screen" style="display:none;">
-    <h2>SIDE</h2>
-    <video id="video-side" autoplay playsinline></video>
-    <canvas id="canvas-side"></canvas>
-    <button id="side-freeze">Freeze SIDE</button>
-    <button id="side-to-check">Toliau į CHECK</button>
-  </div>
-
-  <!-- CHECK ekranas -->
-  <div id="check-screen" class="screen" style="display:none;">
-    <div class="image-wrapper">
-      <img id="check-front-img" class="base-image">
-
-      <div id="pupil-left" class="handle pupil"></div>
-      <div id="pupil-right" class="handle pupil"></div>
-      <div id="marker-top" class="handle marker"></div>
-      <div id="frame-ref-line" class="ref-line"></div>
+  <!-- FRONT ekranas: tiesioginis vaizdas iš kameros, automatinis vyzdžių aptikimas -->
+  <div id="front-screen" class="screen active">
+    <div class="left-panel">
+      <h2>FRONT</h2>
+      <video id="video-front" autoplay playsinline></video>
+      <canvas id="canvas-front" width="640" height="480"></canvas>
+      <div class="controls-row">
+        <button id="front-freeze">Freeze FRONT</button>
+      </div>
     </div>
-
-    <div class="check-panel">
-      <h3>CHECK</h3>
-      <div>PD: <span id="pd-value"></span> mm</div>
-      <div>HOC L: <span id="hoc-left-value"></span> mm</div>
-      <div>HOC R: <span id="hoc-right-value"></span> mm</div>
-      <div>Pantoskopinis: <span id="panto-value"></span> °</div>
-      <div>Vertex: <span id="vertex-value"></span> mm</div>
-      <button id="to-results">Į RESULTS</button>
+    <div class="right-panel">
+      <h3>Instrukcija</h3>
+      <p>Pastatyk pacientą tiesiai, žiūrint į kamerą. Sistema automatiškai aptiks vyzdžius ir markerį.</p>
+      <p>Paspausk <b>Freeze FRONT</b>, kai vaizdas stabilus.</p>
     </div>
   </div>
 
-  <!-- RESULTS ekranas -->
-  <div id="results-screen" class="screen" style="display:none;">
+  <!-- SIDE ekranas: profilis, automatinis akies taško aptikimas -->
+  <div id="side-screen" class="screen">
+    <div class="left-panel">
+      <h2>SIDE</h2>
+      <video id="video-side" autoplay playsinline></video>
+      <canvas id="canvas-side" width="640" height="480"></canvas>
+      <div class="controls-row">
+        <button id="side-freeze">Freeze SIDE</button>
+        <button id="side-to-check">Toliau į CHECK</button>
+      </div>
+    </div>
+    <div class="right-panel">
+      <h3>Instrukcija</h3>
+      <p>Pacientas profiliu, žiūri tiesiai. Sistema aptiks akį ir markerį.</p>
+      <p>Paspausk <b>Freeze SIDE</b>, tada <b>Toliau į CHECK</b>.</p>
+    </div>
+  </div>
+
+  <!-- CHECK ekranas: rankinis patikslinimas, HOYA stiliaus panelė -->
+  <div id="check-screen" class="screen">
+    <div class="left-panel">
+      <h2>CHECK</h2>
+      <div class="image-wrapper">
+        <!-- FRONT nuotrauka su overlay -->
+        <img id="check-front-img" class="base-image" alt="Front kadras">
+
+        <!-- Vyzdžių ir markerio rankinio patikslinimo taškai -->
+        <div id="pupil-left" class="handle pupil"></div>
+        <div id="pupil-right" class="handle pupil"></div>
+        <div id="marker-top" class="handle marker"></div>
+        <div id="frame-ref-line" class="ref-line"></div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="check-panel">
+        <h3>Matavimų patikra</h3>
+        <div>PD: <span id="pd-value">–</span> mm</div>
+        <div>HOC L: <span id="hoc-left-value">–</span> mm</div>
+        <div>HOC R: <span id="hoc-right-value">–</span> mm</div>
+        <div>Pantoskopinis: <span id="panto-value">–</span> °</div>
+        <div>Vertex: <span id="vertex-value">–</span> mm</div>
+        <div class="controls-column">
+          <button id="to-results">Į RESULTS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS ekranas: fotografuojamas ekranas su suvestine -->
+  <div id="results-screen" class="screen">
     <div class="results-container">
       <div class="results-row">
         <div class="results-block">
           <h3>Front</h3>
-          <img id="results-front-img" class="results-img">
+          <img id="results-front-img" class="results-img" alt="Front rezultatas">
         </div>
         <div class="results-block">
           <h3>Side</h3>
-          <img id="results-side-img" class="results-img">
+          <img id="results-side-img" class="results-img" alt="Side rezultatas">
         </div>
       </div>
 
@@ -66,26 +101,30 @@
         <div class="results-table-block">
           <h3>Matavimų suvestinė</h3>
           <table class="results-table">
-            <tr><td>PD</td><td id="res-pd"></td></tr>
-            <tr><td>HOC L</td><td id="res-hoc-l"></td></tr>
-            <tr><td>HOC R</td><td id="res-hoc-r"></td></tr>
-            <tr><td>Pantoskopinis</td><td id="res-panto"></td></tr>
-            <tr><td>Vertex distance</td><td id="res-vertex"></td></tr>
+            <tr><td>PD</td><td id="res-pd">–</td></tr>
+            <tr><td>HOC L</td><td id="res-hoc-l">–</td></tr>
+            <tr><td>HOC R</td><td id="res-hoc-r">–</td></tr>
+            <tr><td>Pantoskopinis</td><td id="res-panto">–</td></tr>
+            <tr><td>Vertex distance</td><td id="res-vertex">–</td></tr>
           </table>
         </div>
       </div>
 
       <div class="results-row">
-        <button id="back-to-check">Atgal</button>
+        <button id="back-to-check">Atgal į CHECK</button>
         <button id="confirm-order">Patvirtinti</button>
       </div>
     </div>
   </div>
 
-  <!-- OpenCV -->
+  <!-- OpenCV (markerio aptikimui) -->
   <script src="https://docs.opencv.org/4.x/opencv.js"></script>
 
-  <!-- Pagrindinis JS -->
-  <script type="module" src="js/check-results.js"></script>
+  <!-- MediaPipe FaceMesh (vyzdžių / akies aptikimui) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+  <!-- Pagrindinis app logikos failas -->
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

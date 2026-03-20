@@ -1,50 +1,204 @@
 /* FILE: css/styles.css */
+/* Paskirtis: bendras UI stilius, HOYA tipo headeris, ekranų išdėstymas, overlay elementai */
 
-body { margin:0; font-family:sans-serif; background:#f5f5f5; }
-.screen { display:flex; gap:20px; padding:20px; }
-.image-wrapper { position:relative; }
-.base-image, video, canvas { width:640px; height:480px; background:#000; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f5f5;
+  color: #333;
+}
+
+/* HEADER / LOGO */
+
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 2px solid #e0e0e0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.logo {
+  height: 60px;
+  object-fit: contain;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 0.5px;
+}
+
+/* EKRANAI */
+
+.screen {
+  display: none;
+  flex-direction: row;
+  gap: 20px;
+  padding: 20px;
+}
+
+.screen.active {
+  display: flex;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.right-panel {
+  min-width: 260px;
+  max-width: 320px;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* VIDEO / CANVAS / IMAGE */
+
+.image-wrapper {
+  position: relative;
+  width: 640px;
+  height: 480px;
+}
+
+.base-image,
+video,
+canvas {
+  width: 640px;
+  height: 480px;
+  background: #000;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  object-fit: cover;
+}
+
+/* DRAG HANDLE'AI */
 
 .handle {
-  position:absolute;
-  width:16px;
-  height:16px;
-  border-radius:50%;
-  border:2px solid #ff0;
-  background:rgba(255,255,0,0.3);
-  cursor:pointer;
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid #00bcd4;
+  background: rgba(0,188,212,0.3);
+  cursor: pointer;
 }
 
-.pupil { border-color:#0f0; }
-.marker { border-color:#f00; }
+.pupil {
+  border-color: #4caf50;
+  background: rgba(76,175,80,0.3);
+}
+
+.marker {
+  border-color: #ff9800;
+  background: rgba(255,152,0,0.3);
+}
+
+/* REF LINE */
 
 .ref-line {
-  position:absolute;
-  left:0;
-  right:0;
-  height:2px;
-  background:#0ff;
-  cursor:pointer;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #ff4081;
+  cursor: pointer;
 }
+
+/* CHECK PANEL */
 
 .check-panel {
-  min-width:220px;
-  background:#fff;
-  padding:10px;
-  border-radius:8px;
-  box-shadow:0 0 5px rgba(0,0,0,0.1);
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.results-container { width:100%; display:flex; flex-direction:column; gap:20px; }
-.results-row { display:flex; gap:20px; }
-.results-block, .results-table-block {
-  background:#fff;
-  padding:10px;
-  border-radius:8px;
-  box-shadow:0 0 5px rgba(0,0,0,0.1);
+.check-panel h3 {
+  margin-top: 0;
 }
 
-.results-img { width:320px; height:240px; object-fit:contain; background:#000; }
+/* RESULTS */
 
-.results-table { width:100%; border-collapse:collapse; }
-.results-table td { border-bottom:1px solid #ddd; padding:4px 8px; }
+.results-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.results-row {
+  display: flex;
+  gap: 20px;
+}
+
+.results-block,
+.results-table-block {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.results-img {
+  width: 320px;
+  height: 240px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.results-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 4px 8px;
+}
+
+/* MYGTUKAI */
+
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #1976d2;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1565c0;
+}
+
+button:active {
+  background: #0d47a1;
+}
+
+.controls-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.controls-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
