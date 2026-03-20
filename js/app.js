@@ -246,10 +246,11 @@ document.getElementById("menu-version").onclick = () => {
 // --- ROTACIJA + FLIP + GULŠČIUKAS ---
 
 function applyRotation(deg) {
+  // ❗ Tik video/canvas — NE layout
   const elements = document.querySelectorAll(
-    "video, canvas, .base-image, .results-img, .horizon-line"
+    "video, canvas, .base-image, .results-img"
   );
-
+// ❗ Auto-rotation OFF — rotation applies ONLY to media, not layout
   const flip = localStorage.getItem("videoFlip") || "none";
 
   let scaleX = 1;
@@ -269,7 +270,7 @@ function applyRotation(deg) {
 
 function applyFlip(mode) {
   const elements = document.querySelectorAll(
-    "video, canvas, .base-image, .results-img, .horizon-line"
+    "video, canvas, .base-image, .results-img"
   );
 
   let rotate = parseInt(localStorage.getItem("videoRotation") || 0);
@@ -292,6 +293,8 @@ function applyFlip(mode) {
 rotationSelect.onchange = () => {
   const deg = parseInt(rotationSelect.value);
   localStorage.setItem("videoRotation", deg);
+
+  // ❗ Auto-rotation OFF — transform applied ONLY to video/canvas, not whole layout
   applyRotation(deg);
 };
 
@@ -338,7 +341,8 @@ function updateHorizon() {
     if (flip === "vertical") scaleY = -1;
     if (flip === "both") { scaleX = -1; scaleY = -1; }
 
-    line.style.transform = `translateY(-50%) rotate(${deg}deg) scale(${scaleX}, ${scaleY})`;
+    // ❗ Gulščiukas niekada nesuka kampo — tik spalva keičiasi
+	line.style.transform = `translateY(-50%) scale(${scaleX}, ${scaleY})`;
   });
 }
 

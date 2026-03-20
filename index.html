@@ -4,15 +4,12 @@
   <meta charset="UTF-8">
   <title>Regos Priežiūra – Matavimo Sistema</title>
 
-  <!-- iPad 11" 2025 + Landscape tikrinimas -->
+  <!-- Tik iPad 11" 2025 + landscape-only -->
   <script>
     function isSupportedDevice() {
       const ua = navigator.userAgent;
-
-      // Tik iPad
       const isiPad = /iPad/.test(ua);
 
-      // Tikslus iPad 11" 2025 ekranas
       const w = window.screen.width;
       const h = window.screen.height;
 
@@ -20,7 +17,6 @@
         (w === 2360 && h === 1640) ||
         (w === 1640 && h === 2360);
 
-      // Tik landscape režimas
       const isLandscape = window.innerWidth > window.innerHeight;
 
       return isiPad && isExactSize && isLandscape;
@@ -42,7 +38,7 @@
           }
         </style>
         <h1>Ši sistema skirta tik iPad 11" (2025) landscape režimu</h1>
-        <p>Prašome pasukti įrenginį horizontaliai arba naudoti tinkamą modelį.</p>
+        <p>Prašome naudoti tinkamą įrenginį.</p>
       `);
     }
   </script>
@@ -227,7 +223,7 @@
     </div>
   </div>
 
-  <!-- Safari zoom disable -->
+  <!-- Disable double-tap zoom -->
   <script>
     let lastTouch = 0;
     document.addEventListener("touchend", function (e) {
