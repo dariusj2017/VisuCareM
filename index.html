@@ -3,24 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Regos Priežiūra – Matavimo Sistema</title>
- // <script>
- // alert("Screen: " + window.screen.width + " x " + window.screen.height);
- // </script>
 
   <!-- Tik iPad 11" 2025 + landscape-only -->
 <script>
 function isSupportedDevice() {
   const isiPad = /iPad/.test(navigator.userAgent);
-
-  // Tavo iPad 10th gen: 820 × 1180 CSS px
   const w = window.screen.width;
   const h = window.screen.height;
-
-  const isTabletSize =
-    Math.min(w, h) >= 800 && Math.max(w, h) >= 1080;
-
+  const isTabletSize = Math.min(w, h) >= 800 && Math.max(w, h) >= 1080;
   const isLandscape = window.innerWidth > window.innerHeight;
-
   return isiPad && isTabletSize && isLandscape;
 }
 
@@ -44,7 +35,7 @@ if (!isSupportedDevice()) {
   `);
 }
 </script>
-  <!-- Išjungiam Safari zoom -->
+
   <meta name="viewport"
       content="width=device-width,
                initial-scale=1.0,
@@ -56,6 +47,7 @@ if (!isSupportedDevice()) {
 </head>
 
 <body>
+
 <script>
 setTimeout(() => {
   alert(
@@ -66,6 +58,11 @@ setTimeout(() => {
 }, 500);
 </script>
 
+<!-- ========================= -->
+<!--     APP WRAPPER START     -->
+<!-- ========================= -->
+
+<div class="app-wrapper">
 
   <!-- HEADER -->
   <div class="header">
@@ -235,27 +232,32 @@ setTimeout(() => {
     </div>
   </div>
 
-  <!-- Disable double-tap zoom -->
-  <script>
-    let lastTouch = 0;
-    document.addEventListener("touchend", function (e) {
-      const now = Date.now();
-      if (now - lastTouch <= 300) e.preventDefault();
-      lastTouch = now;
-    }, { passive: false });
+</div>
+<!-- ========================= -->
+<!--      APP WRAPPER END     -->
+<!-- ========================= -->
 
-    document.addEventListener("gesturestart", function (e) {
-      e.preventDefault();
-    });
-  </script>
+<!-- Disable double-tap zoom -->
+<script>
+  let lastTouch = 0;
+  document.addEventListener("touchend", function (e) {
+    const now = Date.now();
+    if (now - lastTouch <= 300) e.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
 
-  <!-- OpenCV + MediaPipe -->
-  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  document.addEventListener("gesturestart", function (e) {
+    e.preventDefault();
+  });
+</script>
 
-  <!-- Main app -->
-  <script type="module" src="js/app.js"></script>
+<!-- OpenCV + MediaPipe -->
+<script src="https://docs.opencv.org/4.x/opencv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+
+<!-- Main app -->
+<script type="module" src="js/app.js"></script>
 
 </body>
 </html>
