@@ -1,7 +1,35 @@
 /* FILE: css/styles.css */
 /* Bendras stilius – tik iPad 11" 2025 landscape režimui */
 /* ====== BENDRI NUSTATYMAI ====== */
+/* ====== STRUKTŪROS PATAISOS ====== */
 
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+}
+
+.header {
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.main-row {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.media-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+}
 body {
   margin: 0;
   padding: 0;
