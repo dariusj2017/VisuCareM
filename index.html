@@ -12,10 +12,10 @@
 function isSupportedDevice() {
   const isiPad = /iPad/.test(navigator.userAgent);
 
+  // Tavo iPad rodo 820 x 1180 → leidžiam visus iPad nuo 800px
   const w = window.screen.width;
   const h = window.screen.height;
 
-  // iPad 10" / Air / Pro diapazonas
   const isTabletSize =
     Math.min(w, h) >= 800 && Math.max(w, h) >= 1080;
 
@@ -39,8 +39,8 @@ if (!isSupportedDevice()) {
         padding: 20px;
       }
     </style>
-    <h1>Ši sistema skirta iPad įrenginiams landscape režimu</h1>
-    <p>Prašome pasukti planšetę horizontaliai.</p>
+    <h1>Pasukite iPad horizontaliai</h1>
+    <p>Ši sistema veikia tik landscape režimu.</p>
   `);
 }
 </script>
