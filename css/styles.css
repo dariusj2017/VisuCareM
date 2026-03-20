@@ -145,3 +145,30 @@ canvas,
   height: auto;
   object-fit: contain;
 }
+/* Tik aktyvus ekranas matomas */
+.screen {
+  display: none;
+  width: 100%;
+  height: calc(100dvh - 60px); /* 60px = header */
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Vaizdo zona turi užimti visą aukštį */
+.image-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Video ir canvas turi užpildyti zoną */
+.fullscreen-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
