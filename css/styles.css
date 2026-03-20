@@ -2,6 +2,13 @@
 /* Bendras stilius – tik iPad 11" 2025 landscape režimui */
 /* ====== BENDRI NUSTATYMAI ====== */
 /* ====== STRUKTŪROS PATAISOS ====== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .app-wrapper {
   display: flex;
