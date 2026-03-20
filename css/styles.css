@@ -1,18 +1,26 @@
 /* FILE: css/styles.css */
 /* Bendras stilius – tik iPad 11" 2025 landscape režimui */
+/* ====== BENDRI NUSTATYMAI ====== */
 
-/* Bendri nustatymai */
 body {
   margin: 0;
   padding: 0;
-  max-width: 100vw;
-  overflow-x: hidden;
-  font-family: system-ui, sans-serif;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
   background: #111;
   color: #fff;
+  font-family: system-ui, sans-serif;
+  box-sizing: border-box;
 }
 
-/* Layout konteineris */
+/* Kad niekas neišlįstų */
+* {
+  box-sizing: border-box;
+}
+
+/* ====== PAGRINDINIS LAYOUT ====== */
+
 .app-container {
   display: flex;
   flex-direction: row;
@@ -21,17 +29,34 @@ body {
   overflow: hidden;
 }
 
-/* Kairysis meniu */
+/* ====== KAIRĖ PANELĖ (SIDEBAR) ====== */
+
 .left-panel {
-  width: 260px;
+  width: 300px; /* TAVO PASIRINKIMAS B */
   background: #1a1a1a;
-  padding: 10px;
-  height: calc(100dvh - 0px);
+  padding: 12px;
+  height: 100dvh;
   overflow-y: auto;
-  box-sizing: border-box;
+  border-right: 2px solid #222;
 }
 
-/* Dešinė pusė – ekranai */
+/* Mygtukai sidebar'e */
+.left-panel button {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  background: #333;
+  color: #fff;
+}
+.left-panel button:hover {
+  background: #444;
+}
+
+/* ====== DEŠINĖ PUSĖ (EKRANAI) ====== */
+
 .screen {
   flex: 1;
   display: flex;
@@ -41,7 +66,8 @@ body {
   overflow: hidden;
 }
 
-/* Video / Canvas zona */
+/* ====== VIDEO / CANVAS ZONA ====== */
+
 .media-area {
   flex: 1;
   display: flex;
@@ -51,17 +77,9 @@ body {
   overflow: hidden;
 }
 
-/* Video ir canvas turi tilpti į ekraną */
+/* Video ir canvas turi tilpti į 740 px aukštį */
 video,
-canvas {
-  width: 100%;
-  height: auto;
-  max-height: 100%;
-  object-fit: contain;
-  background: #000;
-}
-
-/* Fullscreen media */
+canvas,
 .fullscreen-media {
   width: 100%;
   height: auto;
@@ -70,30 +88,32 @@ canvas {
   background: #000;
 }
 
-/* Mygtukai */
-button {
+/* ====== HEADER ====== */
+
+.header {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 8px;
-  font-size: 18px;
-  border: none;
-  border-radius: 6px;
-  background: #333;
-  color: #fff;
+  height: 60px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 2px solid #222;
 }
 
-button:hover {
-  background: #444;
+.header .logo {
+  height: 40px;
+  margin-right: 15px;
 }
 
-/* Rezultatų ekranas */
+.header .title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* ====== REZULTATŲ EKRANAS ====== */
+
 .results-img {
   width: 100%;
   height: auto;
   object-fit: contain;
-}
-
-/* Kad niekas neišlįstų už ribų */
-* {
-  box-sizing: border-box;
 }
