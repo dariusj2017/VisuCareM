@@ -1,5 +1,5 @@
 // FILE: js/app.js
-// Paskirtis: visas workflow – ekranų perjungimas, kamera, freeze, shutter mygtukai, CHECK/RESULTS, meniu, settings, rotacija/flip, dinaminis gulščiukas
+// Tik iPad 11" 2025, landscape, be zoom, su fullscreen media, gulščiuku, flip/rotate, meniu
 
 import {
   frontData,
@@ -17,34 +17,32 @@ import {
 
 import { makeDraggable } from "./drag.js";
 
-// --- EKRANŲ VALDYMAS ---
+// --- EKRANAI ---
 
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(name + "-screen").classList.add("active");
 }
 
-// FRONT elementai
+// FRONT
 const videoFront = document.getElementById("video-front");
 const canvasFront = document.getElementById("canvas-front");
 const ctxFront = canvasFront.getContext("2d");
 
-// SIDE elementai
+// SIDE
 const videoSide = document.getElementById("video-side");
 const canvasSide = document.getElementById("canvas-side");
 const ctxSide = canvasSide.getContext("2d");
 
-// CHECK / RESULTS kintamieji
+// CHECK / RESULTS
 let lastFrontResult = null;
 let lastSideResult = null;
 
-// FRONT rezultato callback
 onFrontResult((res) => {
   lastFrontResult = res;
   updateCheckPanel();
 });
 
-// SIDE rezultato callback
 onSideResult((res) => {
   lastSideResult = res;
   updateCheckPanel();
@@ -55,22 +53,20 @@ onSideResult((res) => {
 const frontFreezeBtn = document.getElementById("front-freeze");
 
 frontFreezeBtn.onclick = () => {
-  // Freeze FRONT kadrą
+  canvasFront.width = videoFront.videoWidth || 2360;
+  canvasFront.height = videoFront.videoHeight || 1640;
+
   ctxFront.drawImage(videoFront, 0, 0, canvasFront.width, canvasFront.height);
   const imgData = ctxFront.getImageData(0, 0, canvasFront.width, canvasFront.height);
 
-  // Markerio aptikimas
   detectFrontMarkerFromImageData(imgData);
 
-  // FRONT kadras CHECK overlay'ui
   document.getElementById("check-front-img").src = canvasFront.toDataURL("image/jpeg");
 
-  // Pereinam į SIDE
   showScreen("side");
   initSideAI(videoSide, canvasSide);
 };
 
-// Permatomi shutter mygtukai FRONT
 document.getElementById("front-shutter-left").onclick =
 document.getElementById("front-shutter-right").onclick =
   () => frontFreezeBtn.click();
@@ -80,25 +76,25 @@ document.getElementById("front-shutter-right").onclick =
 const sideFreezeBtn = document.getElementById("side-freeze");
 
 sideFreezeBtn.onclick = () => {
+  canvasSide.width = videoSide.videoWidth || 2360;
+  canvasSide.height = videoSide.videoHeight || 1640;
+
   ctxSide.drawImage(videoSide, 0, 0, canvasSide.width, canvasSide.height);
   const imgData = ctxSide.getImageData(0, 0, canvasSide.width, canvasSide.height);
 
-  // Markerio aptikimas SIDE
   detectSideMarkersFromImageData(imgData);
 };
 
-// Permatomi shutter mygtukai SIDE
 document.getElementById("side-shutter-left").onclick =
 document.getElementById("side-shutter-right").onclick =
   () => sideFreezeBtn.click();
 
-// SIDE → CHECK
 document.getElementById("side-to-check").onclick = () => {
   showScreen("check");
   initCheck();
 };
 
-// --- CHECK inicializacija ---
+// --- CHECK ---
 
 function initCheck() {
   const pupilLeftEl = document.getElementById("pupil-left");
@@ -106,16 +102,14 @@ function initCheck() {
   const markerTopEl = document.getElementById("marker-top");
   const frameRefLineEl = document.getElementById("frame-ref-line");
 
-  // Pradinės pozicijos (apytikslės)
   pupilLeftEl.style.left = "40%";
   pupilLeftEl.style.top = "50%";
   pupilRightEl.style.left = "60%";
   pupilRightEl.style.top = "50%";
   markerTopEl.style.left = "50%";
   markerTopEl.style.top = "25%";
-  frameRefLineEl.style.top = frontData.frameRefLineY + "px";
+  frameRefLineEl.style.top = (frontData.frameRefLineY || 300) + "px";
 
-  // Drag – atnaujinam frontData
   makeDraggable(pupilLeftEl, (x, y) => {
     frontData.pupilLeft = { x, y };
   });
@@ -137,8 +131,6 @@ function initCheck() {
   document.getElementById("to-results").onclick = showResultsScreen;
 }
 
-// --- CHECK panelės atnaujinimas ---
-
 function updateCheckPanel() {
   if (lastFrontResult) {
     document.getElementById("pd-value").textContent = lastFrontResult.PD_mm.toFixed(2);
@@ -151,19 +143,17 @@ function updateCheckPanel() {
   }
 }
 
-// --- RESULTS ekranas ---
+// --- RESULTS ---
 
 function showResultsScreen() {
   showScreen("results");
 
-  // FRONT ir SIDE kadrai
   document.getElementById("results-front-img").src =
     document.getElementById("check-front-img").src;
 
   document.getElementById("results-side-img").src =
     canvasSide.toDataURL("image/jpeg");
 
-  // Skaičiai
   if (lastFrontResult) {
     document.getElementById("res-pd").textContent = lastFrontResult.PD_mm.toFixed(2) + " mm";
     document.getElementById("res-hoc-l").textContent = lastFrontResult.HOC_Left_mm.toFixed(2) + " mm";
@@ -174,12 +164,8 @@ function showResultsScreen() {
     document.getElementById("res-vertex").textContent = lastSideResult.vertexDistance.toFixed(2) + " mm";
   }
 
-  // Atgal į CHECK
-  document.getElementById("back-to-check").onclick = () => {
-    showScreen("check");
-  };
+  document.getElementById("back-to-check").onclick = () => showScreen("check");
 
-  // Patvirtinimas – čia galėtum siųsti į serverį
   document.getElementById("confirm-order").onclick = () => {
     console.log("ORDER:", {
       front: lastFrontResult,
@@ -190,7 +176,7 @@ function showResultsScreen() {
   };
 }
 
-// --- SIDEBAR LOGIKA ---
+// --- SIDEBAR / MENIU ---
 
 const menuBtn = document.getElementById("menu-btn");
 const sidebar = document.getElementById("sidebar");
@@ -205,7 +191,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// --- SETTINGS PANEL ---
+// SETTINGS PANEL
 
 const settingsPanel = document.getElementById("settings-panel");
 const closeSettings = document.getElementById("close-settings");
@@ -215,7 +201,7 @@ const horizonThresholdInput = document.getElementById("horizon-threshold");
 
 closeSettings.onclick = () => settingsPanel.classList.remove("active");
 
-// --- INFO MODAL ---
+// INFO MODAL
 
 const infoModal = document.getElementById("info-modal");
 const infoTitle = document.getElementById("info-title");
@@ -230,7 +216,7 @@ function openInfo(title, text) {
 
 infoClose.onclick = () => infoModal.classList.remove("active");
 
-// --- MENU ITEMS ---
+// MENU ITEMS
 
 document.getElementById("menu-settings").onclick = () => {
   sidebar.classList.remove("active");
@@ -254,7 +240,7 @@ document.getElementById("menu-help").onclick = () => {
 
 document.getElementById("menu-version").onclick = () => {
   sidebar.classList.remove("active");
-  openInfo("Versija", "Sistema: 1.0.0\nBuild: iPad WebApp");
+  openInfo("Versija", "Sistema: 1.0.0\nBuild: iPad 11\" 2025 WebApp");
 };
 
 // --- ROTACIJA + FLIP + GULŠČIUKAS ---
@@ -303,34 +289,28 @@ function applyFlip(mode) {
   updateHorizon();
 }
 
-// Settings – rotacija
 rotationSelect.onchange = () => {
   const deg = parseInt(rotationSelect.value);
   localStorage.setItem("videoRotation", deg);
   applyRotation(deg);
 };
 
-// Settings – flip
 flipSelect.onchange = () => {
   const mode = flipSelect.value;
   localStorage.setItem("videoFlip", mode);
   applyFlip(mode);
 };
 
-// Settings – gulščiuko slenkstis
 horizonThresholdInput.onchange = () => {
   const val = parseFloat(horizonThresholdInput.value);
   localStorage.setItem("horizonThreshold", val);
 };
 
 // Dinaminis gulščiukas
+
 function updateHorizon() {
   const deg = parseInt(localStorage.getItem("videoRotation") || 0);
-
-  // Normalizuojam kampą į 0–180
   const normalized = Math.abs((deg % 180 + 180) % 180);
-
-  // Vartotojo slenkstis
   const threshold = parseFloat(localStorage.getItem("horizonThreshold") || 7);
 
   const lines = [
@@ -362,10 +342,10 @@ function updateHorizon() {
   });
 }
 
-// Periodiškai atnaujinam (jei kas nors pasikeitė)
 setInterval(updateHorizon, 200);
 
 // Paleidžiant – pritaikom išsaugotus nustatymus
+
 const savedRotation = localStorage.getItem("videoRotation");
 if (savedRotation !== null) {
   rotationSelect.value = savedRotation;
