@@ -8,43 +8,42 @@
  // </script>
 
   <!-- Tik iPad 11" 2025 + landscape-only -->
-  <script>
-    function isSupportedDevice() {
-      const ua = navigator.userAgent;
-      const isiPad = /iPad/.test(ua);
+<script>
+function isSupportedDevice() {
+  const isiPad = /iPad/.test(navigator.userAgent);
 
-      const w = window.screen.width;
-      const h = window.screen.height;
+  const w = window.screen.width;
+  const h = window.screen.height;
 
-      const isExactSize =
-        (w === 2360 && h === 1640) ||
-        (w === 1640 && h === 2360);
+  // iPad 10" / Air / Pro diapazonas
+  const isTabletSize =
+    Math.min(w, h) >= 800 && Math.max(w, h) >= 1080;
 
-      const isLandscape = window.innerWidth > window.innerHeight;
+  const isLandscape = window.innerWidth > window.innerHeight;
 
-      return isiPad && isExactSize && isLandscape;
-    }
+  return isiPad && isTabletSize && isLandscape;
+}
 
-    if (!isSupportedDevice()) {
-      document.write(`
-        <style>
-          body {
-            background: #000;
-            color: #fff;
-            font-family: system-ui;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-            padding: 20px;
-          }
-        </style>
-        <h1>Ši sistema skirta tik iPad 11" (2025) landscape režimu</h1>
-        <p>Prašome naudoti tinkamą įrenginį.</p>
-      `);
-    }
-  </script>
+if (!isSupportedDevice()) {
+  document.write(`
+    <style>
+      body {
+        background: #000;
+        color: #fff;
+        font-family: system-ui;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+        padding: 20px;
+      }
+    </style>
+    <h1>Ši sistema skirta iPad įrenginiams landscape režimu</h1>
+    <p>Prašome pasukti planšetę horizontaliai.</p>
+  `);
+}
+</script>
 
   <!-- Išjungiam Safari zoom -->
   <meta name="viewport"
