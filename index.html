@@ -12,7 +12,8 @@
 function isSupportedDevice() {
   const isiPad = /iPad/.test(navigator.userAgent);
 
-  // Tavo iPad rodo 820 x 1180 → leidžiam visus iPad nuo 800px
+  // Tavo iPad 10th gen rodo 820 x 1180 CSS px
+  // Todėl leidžiam visus iPad nuo 800 px pločio
   const w = window.screen.width;
   const h = window.screen.height;
 
@@ -44,7 +45,6 @@ if (!isSupportedDevice()) {
   `);
 }
 </script>
-
   <!-- Išjungiam Safari zoom -->
   <meta name="viewport"
         content="width=device-width,
