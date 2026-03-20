@@ -1,5 +1,5 @@
 /* FILE: css/styles.css */
-/* Paskirtis: bendras UI stilius, HOYA tipo headeris, ekranų išdėstymas, overlay elementai */
+/* Paskirtis: bendras UI stilius – headeris, ekranai, fullscreen media, drag, gulščiukas, meniu, settings, modalai */
 
 body {
   margin: 0;
@@ -33,6 +33,76 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* HAMBURGER BUTTON */
+
+.menu-btn {
+  margin-left: auto;
+  width: 36px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.menu-btn .bar {
+  width: 100%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -260px;
+  width: 260px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.15);
+  transition: right 0.3s ease;
+  z-index: 999;
+}
+
+.sidebar.active {
+  right: 0;
+}
+
+.sidebar-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.close-sidebar {
+  align-self: flex-end;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.sidebar-item {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #1976d2;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.sidebar-item:hover {
+  background: #1565c0;
+}
+
 /* EKRANAI */
 
 .screen {
@@ -61,45 +131,46 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* VIDEO / CANVAS / IMAGE */
+/* IMAGE WRAPPER / FULLSCREEN MEDIA */
 
 .image-wrapper {
   position: relative;
-  width: 640px;
-  height: 480px;
+  width: 100%;
+  height: calc(100vh - 160px); /* minus header + šiek tiek vietos */
+  overflow: hidden;
+  background: #000;
 }
 
-.base-image,
-video,
-canvas {
-  width: 640px;
-  height: 480px;
-  background: #000;
-  border-radius: 8px;
-  border: 2px solid #ddd;
+.fullscreen-media {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  border-radius: 0;
+  border: none;
+  background: #000;
 }
 
 /* DRAG HANDLE'AI */
 
 .handle {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 3px solid #00bcd4;
-  background: rgba(0,188,212,0.3);
+  background: rgba(0,188,212,0.4);
   cursor: pointer;
+  transform: translate(-50%, -50%);
 }
 
 .pupil {
   border-color: #4caf50;
-  background: rgba(76,175,80,0.3);
+  background: rgba(76,175,80,0.4);
 }
 
 .marker {
   border-color: #ff9800;
-  background: rgba(255,152,0,0.3);
+  background: rgba(255,152,0,0.4);
 }
 
 /* REF LINE */
@@ -111,6 +182,27 @@ canvas {
   height: 3px;
   background: #ff4081;
   cursor: pointer;
+}
+
+/* GULŠČIUKO LINIJOS */
+
+.horizon-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.7);
+  transition: background 0.2s ease;
+  transform: translateY(-50%);
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* Dingsta CHECK ir RESULTS ekranuose */
+#check-screen .horizon-line,
+#results-screen .horizon-line {
+  display: none !important;
 }
 
 /* CHECK PANEL */
@@ -201,4 +293,106 @@ button:active {
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+}
+
+/* Permatomi shutter mygtukai */
+
+.shutter-btn {
+  position: absolute;
+  top: 50%;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 50;
+  transition: 0.2s;
+}
+
+.shutter-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.shutter-btn:active {
+  background: rgba(255,255,255,0.35);
+}
+
+.shutter-btn.left {
+  left: 20px;
+}
+
+.shutter-btn.right {
+  right: 20px;
+}
+
+/* SETTINGS PANEL */
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.settings-panel.active {
+  display: flex;
+}
+
+.settings-content {
+  background: #fff;
+  padding: 20px;
+  width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.close-btn {
+  background: #1976d2;
+  color: #fff;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+/* INFO MODAL */
+
+.info-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.info-modal.active {
+  display: flex;
+}
+
+.info-content {
+  background: #fff;
+  padding: 20px;
+  width: 320px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
