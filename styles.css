@@ -1,388 +1,85 @@
-/* FILE: css/styles.css */
-/* Bendras stilius – tik iPad 11" 2025 landscape režimui */
-
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f5f5f5;
-  color: #333;
-  touch-action: manipulation;
-  -webkit-touch-callout: none;
-  -webkit-text-size-adjust: 100%;
-  overscroll-behavior: none;
+/* File: styles.css
+   Description: Stilius – dviejų panelių (FRONT/SIDE) maketas, iPad optimizavimas, bottom sheet rezultatams. */
+:root {
+  --bg: #0f111a;
+  --card: #1e2030;
+  --text: #f2f2f2;
+  --accent: #2e9afe;
+  --shadow: rgba(0,0,0,.4);
 }
-
-/* HEADER */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
 
 .header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 20px;
-  background: #ffffff;
-  border-bottom: 2px solid #e0e0e0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.logo {
-  height: 60px;
-  object-fit: contain;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* HAMBURGER */
-
-.menu-btn {
-  margin-left: auto;
-  width: 36px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.menu-btn .bar {
-  width: 100%;
-  height: 4px;
-  background: #333;
-  border-radius: 2px;
-}
-
-/* SIDEBAR */
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  right: -260px;
-  width: 260px;
-  height: 100%;
-  background: #ffffff;
-  box-shadow: -4px 0 12px rgba(0,0,0,0.15);
-  transition: right 0.3s ease;
-  z-index: 999;
-}
-
-.sidebar.active {
-  right: 0;
-}
-
-.sidebar-content {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.close-sidebar {
-  align-self: flex-end;
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.sidebar-item {
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: none;
-  background: #1976d2;
-  color: #fff;
-  text-align: left;
-  cursor: pointer;
-  font-size: 15px;
-}
-
-.sidebar-item:hover {
-  background: #1565c0;
-}
-
-/* EKRANAI */
-
-.screen {
-  display: none;
-  flex-direction: row;
-  gap: 20px;
-  padding: 10px 20px 20px 20px;
-  box-sizing: border-box;
-}
-
-.screen.active {
-  display: flex;
-}
-
-.left-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  height: calc(100vh - 100px); /* minus header */
-}
-
-.right-panel {
-  min-width: 260px;
-  max-width: 320px;
-  background: #ffffff;
+  text-align: center;
   padding: 12px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-/* IMAGE WRAPPER – fullscreen zona */
-
-.image-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  flex: 1;
-  overflow: hidden;
-  background: #000;
-}
-
-/* MEDIA – video/canvas/img pilnai ištempti */
-
-.fullscreen-media {
-  position: absolute;
+  background: rgba(30,30,60,0.7);
+  position: sticky;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  z-index: 5;
+}
+.header h1 { font-size: 1.25rem; margin: 6px 0; }
+.header p { margin: 0; font-size: .9rem; opacity: .8; }
+
+.container { padding: 8px; max-width: 1100px; margin: 0 auto; }
+
+.btn {
+  margin-top: 8px;
+  padding: 12px 16px;
   border: none;
-  background: #000;
-}
-
-/* DRAG HANDLE'AI */
-
-.handle {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 3px solid #00bcd4;
-  background: rgba(0,188,212,0.4);
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-  z-index: 150;
-}
-
-.pupil {
-  border-color: #4caf50;
-  background: rgba(76,175,80,0.4);
-}
-
-.marker {
-  border-color: #ff9800;
-  background: rgba(255,152,0,0.4);
-}
-
-/* REF LINE */
-
-.ref-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #ff4081;
-  cursor: pointer;
-  z-index: 140;
-}
-
-/* GULŠČIUKAS */
-
-.horizon-line {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: rgba(255,255,255,0.7);
-  transition: background 0.2s ease;
-  transform: translateY(-50%);
-  z-index: 120;
-  pointer-events: none;
-}
-
-/* Dingsta CHECK ir RESULTS ekranuose */
-#check-screen .horizon-line,
-#results-screen .horizon-line {
-  display: none !important;
-}
-
-/* RESULTS */
-
-.results-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.results-row {
-  display: flex;
-  gap: 16px;
-}
-
-.results-block {
-  background: #fff;
-  padding: 12px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.results-img {
-  width: 320px;
-  height: 240px;
-  object-fit: contain;
-  background: #000;
   border-radius: 8px;
-  border: 2px solid #ddd;
-}
-
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.results-table td {
-  border-bottom: 1px solid #ddd;
-  padding: 4px 8px;
-}
-
-/* MYGTUKAI */
-
-button {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  background: #1976d2;
+  background: var(--accent);
   color: #fff;
-  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
 }
+.btn-secondary { background: #555; }
 
-button:hover {
-  background: #1565c0;
+.camera-grid {
+  height: 60vh; /* užtikrina vietą kameroms, paliekant vietos rezultatams */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
-
-button:active {
-  background: #0d47a1;
-}
-
-/* Permatomi shutter mygtukai */
-
-.shutter-btn {
-  position: absolute;
-  top: 50%;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 4px solid rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(4px);
-  transform: translateY(-50%);
-  cursor: pointer;
-  z-index: 200;
-  transition: 0.2s;
-}
-
-.shutter-btn:hover {
-  background: rgba(255,255,255,0.25);
-}
-
-.shutter-btn:active {
-  background: rgba(255,255,255,0.35);
-}
-
-.shutter-btn.left {
-  left: 20px;
-}
-
-.shutter-btn.right {
-  right: 20px;
-}
-
-/* SETTINGS PANEL */
-
-.settings-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.45);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.settings-panel.active {
-  display: flex;
-}
-
-.settings-content {
-  background: #fff;
-  padding: 20px;
-  width: 320px;
+.camera-panel {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.close-btn {
-  background: #1976d2;
-  color: #fff;
   padding: 8px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-/* INFO MODAL */
-
-.info-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.45);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.info-modal.active {
-  display: flex;
-}
-
-.info-content {
-  background: #fff;
-  padding: 20px;
-  width: 320px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: stretch;
 }
+.camera-panel h2 { font-size: 1rem; margin: 6px 6px 8px; text-align: left; }
+.video-wrap { position: relative; flex: 1; min-height: 0; background: #000; border-radius: 8px; overflow: hidden; }
+video { width: 100%; height: auto; display: block; }
+.overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+
+@media (max-width: 900px) {
+  .camera-grid { height: auto; grid-template-columns: 1fr; }
+  .header { position: static; }
+}
+
+.results-bar {
+  text-align: center;
+  margin: 8px 0;
+}
+.results-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 40vh;
+  background: rgba(10, 10, 20, 0.95);
+  border-top: 1px solid rgba(255,255,255,.15);
+  color: #fff;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
+  overflow: auto;
+}
+.sheet-header {
+  display: flex; align-items: center;
+  gap: 8px;
+}
+.sheet-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+#results-json { white-space: pre-wrap; background: #0a0a0a; padding: 8px; border-radius: 6px; min-height: 120px; }
