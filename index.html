@@ -1,174 +1,44 @@
+<<!--
+  File: index.html
+  Location: /project-root/
+  Purpose: Main start page of the optical measurement system.
+  Description:
+    - Displays hero image (VisuCareM.png)
+    - Provides navigation to measurement workflow
+    - Allows Adult/Child selection
+    - Entry point for the entire web application
+-->
+
 <!DOCTYPE html>
 <html lang="lt">
 <head>
   <meta charset="UTF-8" />
   <title>Matavimo sistema – Startas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent2: #0ea5e9;
-      --border: rgba(148, 163, 184, 0.25);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-    }
-
-    body {
-      background: radial-gradient(circle at top, #1e293b, #0f172a 60%);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 1100px;
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 30px;
-      align-items: center;
-    }
-
-    .image-panel {
-      background: var(--panel);
-      border-radius: 20px;
-      padding: 20px;
-      border: 1px solid var(--border);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .image-panel img {
-      width: 100%;
-      border-radius: 16px;
-      object-fit: cover;
-    }
-
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    .title {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .subtitle {
-      font-size: 15px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .btn {
-      padding: 14px 20px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: 0.15s ease;
-      width: 100%;
-      text-align: center;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #0f172a;
-      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.45);
-    }
-
-    .btn-secondary {
-      background: rgba(148, 163, 184, 0.12);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(148, 163, 184, 0.18);
-    }
-
-    .selector {
-      display: flex;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .selector button {
-      flex: 1;
-      padding: 12px 0;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(148, 163, 184, 0.1);
-      color: var(--muted);
-      font-size: 14px;
-      cursor: pointer;
-      transition: 0.15s ease;
-    }
-
-    .selector button.active {
-      background: var(--accent);
-      color: #0f172a;
-      border-color: var(--accent2);
-      font-weight: 600;
-    }
-
-    .selector button:hover {
-      background: rgba(148, 163, 184, 0.2);
-    }
-
-    @media (max-width: 900px) {
-      .container {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/main.js" defer></script>
 </head>
 
 <body>
   <div class="container">
 
-    <!-- Kairė pusė: didelis vizualas -->
     <div class="image-panel">
-      <img src="your-image-here.png" alt="Measurement preview">
+      <img src="img/VisuCareM.png" alt="Measurement preview">
     </div>
 
-    <!-- Dešinė pusė: nustatymai -->
     <div class="right-panel">
       <div class="title">Optinė matavimo sistema</div>
       <div class="subtitle">
-        Pradėkite naują matavimą arba atidarykite kliento duomenis.  
+        Pradėkite naują matavimą arba atidarykite kliento duomenis.
         Visi matavimai atliekami naudojant fizinius marker’ius ir dviejų nuotraukų metodą.
       </div>
 
-      <button class="btn btn-primary">Start a new measurement</button>
-      <button class="btn btn-secondary">Access or edit customer files</button>
+      <button class="btn btn-primary" id="btnStart">Start a new measurement</button>
+      <button class="btn btn-secondary" id="btnCustomers">Access or edit customer files</button>
 
       <div class="selector">
-        <button class="active">Adult</button>
-        <button>Child</button>
+        <button class="active" id="selAdult">Adult</button>
+        <button id="selChild">Child</button>
       </div>
     </div>
 
