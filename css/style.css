@@ -1,82 +1,21 @@
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    height: 100%;
-    background: black;
+/*
+  File: style.css
+  Location: /project-root/css/
+  Purpose: Global UI styling for the optical measurement system.
+  Description:
+    - Defines color palette, typography, layout
+    - Styles buttons, panels, selectors, hero section
+    - Used by index.html and future pages (front.html, side.html)
+*/
+
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent2: #0ea5e9;
+  --border: rgba(148, 163, 184, 0.25);
 }
 
-/* VIDEO – apverstas 180° */
-video {
-    position: absolute;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    transform: rotate(180deg);
-}
-
-/* CANVAS – taip pat apverstas 180° */
-canvas {
-    position: absolute;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    transform: rotate(180deg);
-    display: none;
-}
-
-/* Gulsčiukas */
-#h-line {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100vw;
-    height: 4px;
-    background-color: red;
-    pointer-events: none;
-    z-index: 9999;
-}
-
-/* Kryžiukai */
-.cross {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-left: 2px solid white;
-    border-top: 2px solid white;
-    transform: translate(-50%, -50%) rotate(45deg);
-    pointer-events: none;
-    z-index: 9999;
-}
-
-#cross-left {
-    left: 25%;
-    top: 50%;
-}
-
-#cross-right {
-    left: 75%;
-    top: 50%;
-}
-
-/* Mygtukai */
-.controls {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 99999;
-}
-
-button {
-    padding: 12px 20px;
-    font-size: 18px;
-    border: none;
-    background: #00aaff;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-}
+/* ... likęs CSS kodas ... */
