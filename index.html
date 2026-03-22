@@ -1,52 +1,88 @@
-<!DOCTYPE html>
+<!-- File: index.html
+     Description: Pagrindinis SPA failas iPad draugiškam FRONT + SIDE matavimui. 
+     Nustatytas nekeliantis zoom’ą/scroll’ą. Naudoja marker’ių detekciją (stubas) ir eksportą JSON/CSV. -->
+
+<!doctype html>
 <html lang="lt">
 <head>
-  <meta charset="UTF-8">
-  <title>Viewport Test</title>
-
-  <meta name="viewport"
-        content="width=device-width,
-                 initial-scale=1.0,
-                 maximum-scale=1.0,
-                 user-scalable=no,
-                 viewport-fit=cover">
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Rėmo matavimai – FRONT + SIDE</title>
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    body {
-      font-family: system-ui;
-      background: #111;
-      color: #0f0;
-      padding: 20px;
-      font-size: 22px;
-      line-height: 1.6;
-    }
+    /* Užtikriname papildomą stabilumą: negalima scroll'inti, žiūrėkite, kaip prilimpa dalys prie viewport'o */
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   </style>
 </head>
-
 <body>
+  <!-- File: index.html (header)
+       Description: Pagrindinis antraštės blokas su pradėjimo mygtuku. -->
+  <header class="header">
+    <h1>Rėmo matavimo įrankis (FRONT + SIDE)</h1>
+    <p>Matavimai atliekami su fiziniais marker’iais. Visos procedūros vykdomos naršyklėje (kliento pusė).</p>
+    <button id="start-cams" class="btn">Pradėti matavimą (iPan)</button>
+  </header>
 
-<h2>Viewport Test</h2>
+  <!-- File: index.html (camera section)
+       Description: Dvigubas FRONT/SIDE vaizdo srautas su laikikliais ir užduotų matavimų mygtukais. -->
+  <main class="container">
 
-<div id="out"></div>
+    <section id="camera-section" aria-label="Kameros matavimo zonos">
+      <div class="camera-grid">
+        <!-- FRONT kamera -->
+        <div class="camera-panel" aria-label="FRONT kamera">
+          <h2>FRONT kamera</h2>
+          <div class="video-wrap">
+            <video id="video-front" playsinline autoplay muted></video>
+            <canvas id="overlay-front" class="overlay"></canvas>
+          </div>
+          <button id="capture-front" class="btn">Capture FRONT</button>
+        </div>
 
-<script>
-function update() {
-  const out = document.getElementById("out");
-  out.innerHTML = `
-    <b>window.innerWidth:</b> ${window.innerWidth}<br>
-    <b>window.innerHeight:</b> ${window.innerHeight}<br><br>
+        <!-- SIDE kamera -->
+        <div class="camera-panel" aria-label="SIDE kamera">
+          <h2>SIDE kamera</h2>
+          <div class="video-wrap">
+            <video id="video-side" playsinline autoplay muted></video>
+            <canvas id="overlay-side" class="overlay"></canvas>
+          </div>
+          <button id="capture-side" class="btn">Capture SIDE</button>
+        </div>
+      </div>
+    </section>
 
-    <b>screen.width:</b> ${window.screen.width}<br>
-    <b>screen.height:</b> ${window.screen.height}<br><br>
+    <!-- File: index.html (results toggle)
+         Description: Išvedimo juosta/šoninė panelė rezultatams. -->
+    <section class="results-bar" aria-label="Rezultatų išvestis">
+      <button id="toggle-results" class="btn btn-secondary">Rodyti rezultatus</button>
+    </section>
 
-    <b>documentElement.clientWidth:</b> ${document.documentElement.clientWidth}<br>
-    <b>documentElement.clientHeight:</b> ${document.documentElement.clientHeight}<br>
-  `;
-}
+  </main>
 
-update();
-window.addEventListener("resize", update);
-</script>
+  <!-- Bottom sheet: rezultatai (JSON/CSV eksportas)
+       File: index.html (results sheet)
+       Description: Privatūs rezultatų rodiniai kaip drawer/bottom sheet. -->
+  <div id="resultsSheet" class="results-sheet" aria-label="Rezultatų skydas" hidden>
+    <div class="sheet-header">
+      <strong>Rezultatai</strong>
+      <button id="close-sheet" class="btn" style="margin-left:auto;">Uždaryti</button>
+    </div>
+    <pre id="results-json"></pre>
+    <div class="sheet-actions">
+      <button id="export-json" class="btn">Eksportuoti JSON</button>
+      <button id="download-csv" class="btn">Atsisiųsti CSV</button>
+    </div>
+  </div>
 
+  <!-- Pridėtas OpenCV.js (naudoti tik kai planuojate detekciją)
+       File: index.html (dependencies)
+       Description: OpenCV.js CDN – papildoma detekcijos galimybė. -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
+
+  <!-- Priedai: detektoriai / app logika -->
+  <script src="scripts/detector.js"></script> <!-- File: detectors.js
+                                                Description: MarkerDetector klasė (stub, laukia realios detekcijos). -->
+  <script src="scripts/app.js"></script>        <!-- File: app.js
+                                                Description: Pagrindinė logika – kamerų inicializavimas, matavimų skaičiavimas, eksportas. -->
 </body>
 </html>
