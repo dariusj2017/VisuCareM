@@ -1,31 +1,37 @@
-import { initFaceAI, detectMarkers, frontData, onFrontResult } from "./ai.js";
-import { bindPupilDrag } from "./drag.js";
+/*
+  File: main.js
+  Location: /project-root/js/
+  Purpose: Logic for the start page (index.html).
+  Description:
+    - Handles Adult/Child selection
+    - Handles navigation to measurement pages
+    - Prepares structure for future settings modal and customer management
+*/
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+document.addEventListener("DOMContentLoaded", () => {
 
-const pupilLeftEl = document.getElementById("pupil-left");
-const pupilRightEl = document.getElementById("pupil-right");
+  const btnStart = document.getElementById("btnStart");
+  const btnCustomers = document.getElementById("btnCustomers");
 
-// 1) paleidžiam AI vyzdžiams
-initFaceAI(video, canvas);
+  const selAdult = document.getElementById("selAdult");
+  const selChild = document.getElementById("selChild");
 
-// 2) paleidžiam drag & drop pataisymui
-bindPupilDrag(pupilLeftEl, pupilRightEl, canvas);
+  selAdult.addEventListener("click", () => {
+    selAdult.classList.add("active");
+    selChild.classList.remove("active");
+  });
 
-// 3) kai turim kadrą – aptinkam markerį (pvz. po „Freeze“)
-function captureFrameAndDetectMarkers() {
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  detectMarkers(imageData);
-}
+  selChild.addEventListener("click", () => {
+    selChild.classList.add("active");
+    selAdult.classList.remove("active");
+  });
 
-// 4) nustatom rėmelio referencinę liniją (pvz. per UI sliderį ar drag)
-frontData.frameRefLineY = canvas.height * 0.7;
+  btnStart.addEventListener("click", () => {
+    window.location.href = "front.html";
+  });
 
-// 5) gaunam rezultatus ir atnaujinam UI
-onFrontResult((result, data) => {
-  // čia atnaujini PD/HOC lentelę
-  console.log("FRONT:", result);
+  btnCustomers.addEventListener("click", () => {
+    window.location.href = "customers.html";
+  });
+
 });
