@@ -1,88 +1,177 @@
-<!-- File: index.html
-     Description: Pagrindinis SPA failas iPad draugiškam FRONT + SIDE matavimui. 
-     Nustatytas nekeliantis zoom’ą/scroll’ą. Naudoja marker’ių detekciją (stubas) ir eksportą JSON/CSV. -->
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="lt">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Rėmo matavimai – FRONT + SIDE</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <title>Matavimo sistema – Startas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
   <style>
-    /* Užtikriname papildomą stabilumą: negalima scroll'inti, žiūrėkite, kaip prilimpa dalys prie viewport'o */
-    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #0ea5e9;
+      --border: rgba(148, 163, 184, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e293b, #0f172a 60%);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .image-panel {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-panel img {
+      width: 100%;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .btn {
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: 0.15s ease;
+      width: 100%;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0f172a;
+      box-shadow: 0 10px 25px rgba(56, 189, 248, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.45);
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.18);
+    }
+
+    .selector {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .selector button {
+      flex: 1;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .selector button.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent2);
+      font-weight: 600;
+    }
+
+    .selector button:hover {
+      background: rgba(148, 163, 184, 0.2);
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <!-- File: index.html (header)
-       Description: Pagrindinis antraštės blokas su pradėjimo mygtuku. -->
-  <header class="header">
-    <h1>Rėmo matavimo įrankis (FRONT + SIDE)</h1>
-    <p>Matavimai atliekami su fiziniais marker’iais. Visos procedūros vykdomos naršyklėje (kliento pusė).</p>
-    <button id="start-cams" class="btn">Pradėti matavimą (iPan)</button>
-  </header>
+  <div class="container">
 
-  <!-- File: index.html (camera section)
-       Description: Dvigubas FRONT/SIDE vaizdo srautas su laikikliais ir užduotų matavimų mygtukais. -->
-  <main class="container">
+    <!-- Kairė pusė: didelis vizualas -->
+    <div class="image-panel">
+      <img src="your-image-here.png" alt="Measurement preview">
+    </div>
 
-    <section id="camera-section" aria-label="Kameros matavimo zonos">
-      <div class="camera-grid">
-        <!-- FRONT kamera -->
-        <div class="camera-panel" aria-label="FRONT kamera">
-          <h2>FRONT kamera</h2>
-          <div class="video-wrap">
-            <video id="video-front" playsinline autoplay muted></video>
-            <canvas id="overlay-front" class="overlay"></canvas>
-          </div>
-          <button id="capture-front" class="btn">Capture FRONT</button>
-        </div>
-
-        <!-- SIDE kamera -->
-        <div class="camera-panel" aria-label="SIDE kamera">
-          <h2>SIDE kamera</h2>
-          <div class="video-wrap">
-            <video id="video-side" playsinline autoplay muted></video>
-            <canvas id="overlay-side" class="overlay"></canvas>
-          </div>
-          <button id="capture-side" class="btn">Capture SIDE</button>
-        </div>
+    <!-- Dešinė pusė: nustatymai -->
+    <div class="right-panel">
+      <div class="title">Optinė matavimo sistema</div>
+      <div class="subtitle">
+        Pradėkite naują matavimą arba atidarykite kliento duomenis.  
+        Visi matavimai atliekami naudojant fizinius marker’ius ir dviejų nuotraukų metodą.
       </div>
-    </section>
 
-    <!-- File: index.html (results toggle)
-         Description: Išvedimo juosta/šoninė panelė rezultatams. -->
-    <section class="results-bar" aria-label="Rezultatų išvestis">
-      <button id="toggle-results" class="btn btn-secondary">Rodyti rezultatus</button>
-    </section>
+      <button class="btn btn-primary">Start a new measurement</button>
+      <button class="btn btn-secondary">Access or edit customer files</button>
 
-  </main>
-
-  <!-- Bottom sheet: rezultatai (JSON/CSV eksportas)
-       File: index.html (results sheet)
-       Description: Privatūs rezultatų rodiniai kaip drawer/bottom sheet. -->
-  <div id="resultsSheet" class="results-sheet" aria-label="Rezultatų skydas" hidden>
-    <div class="sheet-header">
-      <strong>Rezultatai</strong>
-      <button id="close-sheet" class="btn" style="margin-left:auto;">Uždaryti</button>
+      <div class="selector">
+        <button class="active">Adult</button>
+        <button>Child</button>
+      </div>
     </div>
-    <pre id="results-json"></pre>
-    <div class="sheet-actions">
-      <button id="export-json" class="btn">Eksportuoti JSON</button>
-      <button id="download-csv" class="btn">Atsisiųsti CSV</button>
-    </div>
+
   </div>
-
-  <!-- Pridėtas OpenCV.js (naudoti tik kai planuojate detekciją)
-       File: index.html (dependencies)
-       Description: OpenCV.js CDN – papildoma detekcijos galimybė. -->
-  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
-
-  <!-- Priedai: detektoriai / app logika -->
-  <script src="scripts/detector.js"></script> <!-- File: detectors.js
-                                                Description: MarkerDetector klasė (stub, laukia realios detekcijos). -->
-  <script src="scripts/app.js"></script>        <!-- File: app.js
-                                                Description: Pagrindinė logika – kamerų inicializavimas, matavimų skaičiavimas, eksportas. -->
 </body>
 </html>
