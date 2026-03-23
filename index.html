@@ -1,47 +1,25 @@
-<<!--
-  File: index.html
-  Location: /project-root/
-  Purpose: Main start page of the optical measurement system.
-  Description:
-    - Displays hero image (VisuCareM.png)
-    - Provides navigation to measurement workflow
-    - Allows Adult/Child selection
-    - Entry point for the entire web application
--->
-
 <!DOCTYPE html>
 <html lang="lt">
-<head>
-  <meta charset="UTF-8" />
-  <title>Matavimo sistema – Startas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/main.js" defer></script>
-</head>
+  <head>
+    <meta charset="UTF-8" />
 
-<body>
-  <div class="container">
+    <!-- iPad svarbu -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-    <div class="image-panel">
-      <img src="img/VisuCareM.png" alt="Measurement preview">
-    </div>
+    <title>VisuCareM</title>
 
-    <div class="right-panel">
-      <div class="title">Optinė matavimo sistema</div>
-      <div class="subtitle">
-        Pradėkite naują matavimą arba atidarykite kliento duomenis.
-        Visi matavimai atliekami naudojant fizinius marker’ius ir dviejų nuotraukų metodą.
-      </div>
+    <!-- spalva status bar (vėliau PWA) -->
+    <meta name="theme-color" content="#000000" />
+  </head>
 
-      <button class="btn btn-primary" id="btnStart">Start a new measurement</button>
-      <button class="btn btn-secondary" id="btnCustomers">Access or edit customer files</button>
+  <body>
+    <!-- Čia React mountinasi -->
+    <div id="root"></div>
 
-      <div class="selector">
-        <button class="active" id="selAdult">Adult</button>
-        <button id="selChild">Child</button>
-      </div>
-    </div>
-
-  </div>
-</body>
+    <!-- React entry -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
