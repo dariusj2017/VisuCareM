@@ -1,0 +1,21 @@
+/*
+  File: style.css
+  Location: /project-root/css/
+  Purpose: Global UI styling for the optical measurement system.
+  Description:
+    - Defines color palette, typography, layout
+    - Styles buttons, panels, selectors, hero section
+    - Used by index.html and future pages (front.html, side.html)
+*/
+
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --accent2: #0ea5e9;
+  --border: rgba(148, 163, 184, 0.25);
+}
+
+/* ... likęs CSS kodas ... */

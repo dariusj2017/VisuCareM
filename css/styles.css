@@ -1,0 +1,189 @@
+/* FILE: css/styles.css */
+/* Bendras stilius – tik iPad 11" 2025 landscape režimui */
+/* ====== BENDRI NUSTATYMAI ====== */
+/* ====== STRUKTŪROS PATAISOS ====== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;          /* neleidžia scroll */
+  touch-action: none;        /* neleidžia stumdyti pirštu */
+  overscroll-behavior: none; /* neleidžia bounce */
+  background: #000;
+}
+
+body {
+  position: fixed; /* Safari fix */
+  inset: 0;
+}
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+}
+
+.header {
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.main-row {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.media-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+}
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Kad niekas neišlįstų */
+* {
+  box-sizing: border-box;
+}
+
+/* ====== PAGRINDINIS LAYOUT ====== */
+
+.app-container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ====== KAIRĖ PANELĖ (SIDEBAR) ====== */
+
+.left-panel {
+  width: 300px; /* TAVO PASIRINKIMAS B */
+  background: #1a1a1a;
+  padding: 12px;
+  height: 100dvh;
+  overflow-y: auto;
+  border-right: 2px solid #222;
+}
+
+/* Mygtukai sidebar'e */
+.left-panel button {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  background: #333;
+  color: #fff;
+}
+.left-panel button:hover {
+  background: #444;
+}
+
+/* ====== DEŠINĖ PUSĖ (EKRANAI) ====== */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 10px;
+  overflow: hidden;
+}
+
+/* ====== VIDEO / CANVAS ZONA ====== */
+
+.media-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+}
+
+/* Video ir canvas turi tilpti į 740 px aukštį */
+video,
+canvas,
+.fullscreen-media {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* ====== HEADER ====== */
+
+.header {
+  width: 100%;
+  height: 60px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 2px solid #222;
+}
+
+.header .logo {
+  height: 40px;
+  margin-right: 15px;
+}
+
+.header .title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* ====== REZULTATŲ EKRANAS ====== */
+
+.results-img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+/* Tik aktyvus ekranas matomas */
+.screen {
+  display: none;
+  width: 100%;
+  height: calc(100dvh - 60px); /* 60px = header */
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Vaizdo zona turi užimti visą aukštį */
+.image-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Video ir canvas turi užpildyti zoną */
+.fullscreen-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
