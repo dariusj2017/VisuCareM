@@ -1,43 +1,97 @@
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 function App() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [error, setError] = useState("");
+  const [isCameraOn, setIsCameraOn] = useState(false);
+
+  const startCamera = async () => {
+    try {
+      setError("");
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+        },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+
+      setIsCameraOn(true);
+    } catch (err) {
+      setError("Nepavyko įjungti kameros. Patikrink naršyklės leidimus.");
+      setIsCameraOn(false);
+      console.error(err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsCameraOn(false);
+  };
+
+  useEffect(() => {
+    startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-logo">IoT</div>
+          <div className="brand-logo">VC</div>
           <div className="brand-text">
+            <div>VISUCAREM</div>
             <div>POSITION OF WEAR</div>
-            <div>MEASUREMENTS</div>
           </div>
         </div>
 
         <div className="title">FRONT PHOTO</div>
 
         <div className="topbar-actions">
-          <button className="icon-btn" aria-label="Home">
-            ⌂
-          </button>
-          <button className="icon-btn" aria-label="Menu">
-            ☰
+          <button className="icon-btn" aria-label="Settings">
+            ⚙
           </button>
         </div>
       </header>
 
       <main className="viewer">
-        <img
-          className="face-image"
-          src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80"
-          alt="Face with glasses"
+        <video
+          ref={videoRef}
+          className="camera-video"
+          autoPlay
+          playsInline
+          muted
         />
 
         <div className="overlay">
           <div className="glasses-guide">
             <div className="top-line"></div>
+
             <div className="left-marker marker">
               <div className="marker-inner"></div>
             </div>
+
             <div className="center-marker marker black"></div>
+
             <div className="right-marker marker">
               <div className="marker-inner"></div>
             </div>
@@ -53,6 +107,12 @@ function App() {
           </div>
 
           <button className="capture-btn" aria-label="Take photo"></button>
+
+          {!isCameraOn && !error && (
+            <div className="camera-status">Jungiama kamera...</div>
+          )}
+
+          {error && <div className="camera-status error">{error}</div>}
         </div>
 
         <div className="bottom-panel">
@@ -69,7 +129,7 @@ function App() {
             </div>
           </div>
 
-          <div className="mini-brand">IoT</div>
+          <div className="mini-brand">VC</div>
         </div>
       </main>
     </div>
