@@ -43,15 +43,15 @@ a {
 }
 
 .brand-logo {
-  width: 42px;
-  height: 42px;
-  background: #1267d6;
+  width: 14px;
+  height: 14px;
+  background: transparent;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  border-radius: 4px;
+  border-radius: 2px;
   flex: 0 0 auto;
 }
 
