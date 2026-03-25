@@ -1,136 +1,77 @@
-import { useEffect, useRef, useState } from "react";
+import "./App.css";
 
 function App() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [error, setError] = useState<string>("");
-  const [isCameraOn, setIsCameraOn] = useState(false);
-
-  const startCamera = async () => {
-    try {
-      setError("");
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-        },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
-      setIsCameraOn(true);
-    } catch (err) {
-      setError("Nepavyko įjungti kameros. Patikrink leidimus naršyklėje.");
-      setIsCameraOn(false);
-      console.error(err);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
-    setIsCameraOn(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        padding: "24px",
-        fontFamily: "Arial, sans-serif",
-        background: "#f5f7fb",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          background: "white",
-          borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-        }}
-      >
-        <h1 style={{ marginTop: 0 }}>VisuCareM</h1>
-        <p>Akinių matavimo sistema – kameros testas</p>
-
-        <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-          <button
-            onClick={startCamera}
-            style={{
-              padding: "12px 18px",
-              borderRadius: "10px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Įjungti kamerą
-          </button>
-
-          <button
-            onClick={stopCamera}
-            style={{
-              padding: "12px 18px",
-              borderRadius: "10px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Išjungti kamerą
-          </button>
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <div className="brand-logo">IoT</div>
+          <div className="brand-text">
+            <div>POSITION OF WEAR</div>
+            <div>MEASUREMENTS</div>
+          </div>
         </div>
 
-        {error && (
-          <p style={{ color: "crimson", fontWeight: 600 }}>{error}</p>
-        )}
+        <div className="title">FRONT PHOTO</div>
 
-        <div
-          style={{
-            width: "100%",
-            aspectRatio: "4 / 3",
-            background: "#ddd",
-            borderRadius: "16px",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
+        <div className="topbar-actions">
+          <button className="icon-btn" aria-label="Home">
+            ⌂
+          </button>
+          <button className="icon-btn" aria-label="Menu">
+            ☰
+          </button>
+        </div>
+      </header>
+
+      <main className="viewer">
+        <img
+          className="face-image"
+          src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80"
+          alt="Face with glasses"
+        />
+
+        <div className="overlay">
+          <div className="glasses-guide">
+            <div className="top-line"></div>
+            <div className="left-marker marker">
+              <div className="marker-inner"></div>
+            </div>
+            <div className="center-marker marker black"></div>
+            <div className="right-marker marker">
+              <div className="marker-inner"></div>
+            </div>
+
+            <div className="left-leg"></div>
+            <div className="right-leg"></div>
+          </div>
+
+          <div className="nose-target">
+            <div className="cross horizontal"></div>
+            <div className="cross vertical"></div>
+            <div className="cross-dot"></div>
+          </div>
+
+          <button className="capture-btn" aria-label="Take photo"></button>
         </div>
 
-        <p style={{ marginTop: "16px", color: "#444" }}>
-          Būsena: {isCameraOn ? "kamera įjungta" : "kamera išjungta"}
-        </p>
-      </div>
+        <div className="bottom-panel">
+          <div className="mini-target">
+            <div className="mini-h"></div>
+            <div className="mini-v"></div>
+            <div className="mini-dot"></div>
+          </div>
+
+          <div className="instruction">
+            <div className="instruction-title">Centered!</div>
+            <div className="instruction-text">
+              Now you can take the photo by clicking the button on the right.
+            </div>
+          </div>
+
+          <div className="mini-brand">IoT</div>
+        </div>
+      </main>
     </div>
   );
 }
