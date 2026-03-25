@@ -45,6 +45,26 @@ function App() {
     setIsCameraOn(false);
   };
 
+  const takePhoto = () => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+
+    if (!video.videoWidth || !video.videoHeight) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageDataUrl = canvas.toDataURL("image/png");
+    window.open(imageDataUrl, "_blank");
+  };
+
   useEffect(() => {
     startCamera();
 
@@ -67,7 +87,7 @@ function App() {
         <div className="title">FRONT PHOTO</div>
 
         <div className="topbar-actions">
-          <button className="icon-btn" aria-label="Settings">
+          <button className="icon-btn" aria-label="Settings" type="button">
             ⚙
           </button>
         </div>
@@ -106,7 +126,12 @@ function App() {
             <div className="cross-dot"></div>
           </div>
 
-          <button className="capture-btn" aria-label="Take photo"></button>
+          <button
+            className="capture-btn"
+            aria-label="Take photo"
+            type="button"
+            onClick={takePhoto}
+          ></button>
 
           {!isCameraOn && !error && (
             <div className="camera-status">Jungiama kamera...</div>
