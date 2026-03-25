@@ -15,7 +15,8 @@ body {
   background: #dfe3e6;
 }
 
-button {
+button,
+a {
   font: inherit;
 }
 
@@ -351,6 +352,91 @@ button {
   flex: 0 0 auto;
 }
 
+.preview-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 30;
+}
+
+.preview-card {
+  width: min(92vw, 720px);
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.preview-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.preview-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #f3f3f3;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.preview-body {
+  padding: 12px;
+  background: #f6f7f8;
+  overflow: auto;
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}
+
+.preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.save-btn,
+.secondary-btn {
+  border: none;
+  text-decoration: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #1267d6;
+  color: white;
+}
+
+.secondary-btn {
+  background: #eceff3;
+  color: #222;
+}
+
 @media (max-width: 900px) {
   .title {
     font-size: 16px;
@@ -431,5 +517,15 @@ button {
 
   .instruction-text {
     font-size: 13px;
+  }
+
+  .preview-actions {
+    flex-direction: column;
+  }
+
+  .save-btn,
+  .secondary-btn {
+    width: 100%;
+    text-align: center;
   }
 }

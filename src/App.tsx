@@ -4,8 +4,10 @@ import "./App.css";
 function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   const startCamera = async () => {
     try {
@@ -59,10 +61,16 @@ function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const imageDataUrl = canvas.toDataURL("image/png");
-    window.open(imageDataUrl, "_blank");
+    setCapturedImage(imageDataUrl);
+  };
+
+  const closePreview = () => {
+    setCapturedImage(null);
   };
 
   useEffect(() => {
@@ -156,6 +164,49 @@ function App() {
 
           <div className="mini-brand">VC</div>
         </div>
+
+        {capturedImage && (
+          <div className="preview-modal">
+            <div className="preview-card">
+              <div className="preview-header">
+                <div className="preview-title">Captured photo</div>
+                <button
+                  className="preview-close"
+                  type="button"
+                  onClick={closePreview}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="preview-body">
+                <img
+                  src={capturedImage}
+                  alt="Captured frame"
+                  className="preview-image"
+                />
+              </div>
+
+              <div className="preview-actions">
+                <a
+                  href={capturedImage}
+                  download="visucarem-photo.png"
+                  className="save-btn"
+                >
+                  Save image
+                </a>
+
+                <button
+                  className="secondary-btn"
+                  type="button"
+                  onClick={closePreview}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
