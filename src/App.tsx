@@ -78,6 +78,14 @@ function App() {
 
   const [draggingMarker, setDraggingMarker] = useState<MarkerKey | null>(null);
 
+  const [showLevelUI, setShowLevelUI] = useState(true);
+  const [levelPermissionState, setLevelPermissionState] = useState<
+    "idle" | "granted" | "denied" | "unsupported"
+  >("idle");
+  const [levelEnabled, setLevelEnabled] = useState(false);
+  const [levelX, setLevelX] = useState(0);
+  const [levelY, setLevelY] = useState(0);
+
   const startCamera = async () => {
     try {
       setError("");
@@ -277,6 +285,57 @@ function App() {
     setDraggingMarker(null);
   };
 
+  const requestLevelPermission = async () => {
+    try {
+      const maybeIOS = (
+        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+          requestPermission?: () => Promise<"granted" | "denied">;
+        }
+      );
+
+      if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
+        setLevelPermissionState("unsupported");
+        return;
+      }
+
+      if (typeof maybeIOS.requestPermission === "function") {
+        const result = await maybeIOS.requestPermission();
+        if (result === "granted") {
+          setLevelPermissionState("granted");
+          setLevelEnabled(true);
+        } else {
+          setLevelPermissionState("denied");
+          setLevelEnabled(false);
+        }
+      } else {
+        setLevelPermissionState("granted");
+        setLevelEnabled(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setLevelPermissionState("denied");
+      setLevelEnabled(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!levelEnabled) return;
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const beta = event.beta ?? 0;
+      const gamma = event.gamma ?? 0;
+
+      setLevelX(gamma);
+      setLevelY(beta);
+    };
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+
+    return () => {
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+    };
+  }, [levelEnabled]);
+
   const currentImage = getCurrentImage();
   const currentMarkers = getCurrentMarkers();
   const currentMarkerDefs = getCurrentMarkerDefs();
@@ -291,6 +350,12 @@ function App() {
       frontScale = 120 / distPx;
     }
   }
+
+  const horizontalOk = Math.abs(levelX) <= angleTolerance;
+  const verticalOk = Math.abs(levelY) <= angleTolerance;
+
+  const horizontalOffset = Math.max(-60, Math.min(60, levelX * 2.5));
+  const verticalOffset = Math.max(-60, Math.min(60, levelY * 1.2));
 
   return (
     <div className="app">
@@ -342,6 +407,29 @@ function App() {
             muted
             style={{ transform: getVideoTransform() }}
           />
+        )}
+
+        {showLevelUI && !currentImage && (
+          <>
+            <div className="level-horizontal">
+              <div
+                className={`level-bubble ${horizontalOk ? "level-ok" : ""}`}
+                style={{ transform: `translateX(${horizontalOffset}px)` }}
+              />
+            </div>
+
+            <div className="level-vertical">
+              <div
+                className={`level-bubble ${verticalOk ? "level-ok" : ""}`}
+                style={{ transform: `translateY(${verticalOffset}px)` }}
+              />
+            </div>
+
+            <div className="level-readout">
+              <div>H: {levelX.toFixed(1)}°</div>
+              <div>V: {levelY.toFixed(1)}°</div>
+            </div>
+          </>
         )}
 
         {currentImage && (
@@ -540,6 +628,40 @@ function App() {
               </div>
               <div className="settings-hint">
                 This will be wired to SVG stroke control next.
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Level UI</label>
+
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={`settings-btn ${showLevelUI ? "settings-btn-active" : ""}`}
+                  onClick={() => setShowLevelUI((prev) => !prev)}
+                >
+                  {showLevelUI ? "Hide level UI" : "Show level UI"}
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${
+                    levelEnabled ? "settings-btn-active" : ""
+                  }`}
+                  onClick={requestLevelPermission}
+                >
+                  Enable live level
+                </button>
+              </div>
+
+              <div className="settings-summary">
+                Permission: {levelPermissionState}
+              </div>
+              <div className="settings-summary">
+                Horizontal: {levelX.toFixed(1)}°
+              </div>
+              <div className="settings-summary">
+                Vertical: {levelY.toFixed(1)}°
               </div>
             </div>
 

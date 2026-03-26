@@ -154,9 +154,11 @@ input {
   color: #666;
 }
 
-.mode-row {
+.mode-row,
+.toggle-row {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .mode-btn {
@@ -355,6 +357,62 @@ input {
   flex: 0 0 auto;
 }
 
+.level-horizontal {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  width: 180px;
+  height: 16px;
+  transform: translateX(-50%);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 25;
+}
+
+.level-vertical {
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  width: 16px;
+  height: 180px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 25;
+}
+
+.level-bubble {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 210, 0, 0.95);
+  border: 2px solid rgba(0, 0, 0, 0.55);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.level-ok {
+  background: rgba(0, 220, 120, 0.95);
+}
+
+.level-readout {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 25;
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .title {
     font-size: 16px;
@@ -425,5 +483,20 @@ input {
   .toolbar-btn {
     flex: 1;
     text-align: center;
+  }
+
+  .level-horizontal {
+    width: 140px;
+    top: 18px;
+  }
+
+  .level-vertical {
+    height: 140px;
+    left: 16px;
+  }
+
+  .level-readout {
+    top: 44px;
+    font-size: 12px;
   }
 }
