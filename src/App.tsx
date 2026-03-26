@@ -61,7 +61,7 @@ function App() {
   const [flipVertical, setFlipVertical] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [angleTolerance, setAngleTolerance] = useState(5);
+  const [angleTolerance, setAngleTolerance] = useState(3);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -83,8 +83,8 @@ function App() {
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
-  const [levelX, setLevelX] = useState(0);
-  const [levelY, setLevelY] = useState(0);
+  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
+  const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const startCamera = async () => {
     try {
@@ -287,11 +287,9 @@ function App() {
 
   const requestLevelPermission = async () => {
     try {
-      const maybeIOS = (
-        DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-          requestPermission?: () => Promise<"granted" | "denied">;
-        }
-      );
+      const maybeIOS = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+        requestPermission?: () => Promise<"granted" | "denied">;
+      };
 
       if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
         setLevelPermissionState("unsupported");
@@ -325,8 +323,11 @@ function App() {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      setLevelX(gamma);
-      setLevelY(beta);
+      // Horizontal: left-right tilt
+      setLevelHorizontalDeg(gamma);
+
+      // Vertical: forward-back tilt around upright holding
+      setLevelVerticalDeg(beta - 90);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -351,11 +352,22 @@ function App() {
     }
   }
 
-  const horizontalOk = Math.abs(levelX) <= angleTolerance;
-  const verticalOk = Math.abs(levelY) <= angleTolerance;
+  const horizontalOk = Math.abs(levelHorizontalDeg) <= angleTolerance;
+  const verticalOk = Math.abs(levelVerticalDeg) <= angleTolerance;
+  const centerOk = horizontalOk && verticalOk;
 
-  const horizontalOffset = Math.max(-60, Math.min(60, levelX * 2.5));
-  const verticalOffset = Math.max(-60, Math.min(60, levelY * 1.2));
+  const horizontalRangeDeg = 7;
+  const verticalRangeDeg = 10;
+
+  const horizontalOffset = Math.max(
+    -72,
+    Math.min(72, (levelHorizontalDeg / horizontalRangeDeg) * 72)
+  );
+
+  const verticalOffset = Math.max(
+    -72,
+    Math.min(72, (levelVerticalDeg / verticalRangeDeg) * 72)
+  );
 
   return (
     <div className="app">
@@ -410,26 +422,32 @@ function App() {
         )}
 
         {showLevelUI && !currentImage && (
-          <>
-            <div className="level-horizontal">
+          <div className="cross-level-ui">
+            <div className="cross-level-horizontal-slot">
               <div
-                className={`level-bubble ${horizontalOk ? "level-ok" : ""}`}
-                style={{ transform: `translateX(${horizontalOffset}px)` }}
+                className="cross-level-bubble red-bubble"
+                style={{ transform: `translate(${horizontalOffset}px, -50%)` }}
               />
             </div>
 
-            <div className="level-vertical">
+            <div className="cross-level-vertical-slot">
               <div
-                className={`level-bubble ${verticalOk ? "level-ok" : ""}`}
-                style={{ transform: `translateY(${verticalOffset}px)` }}
+                className="cross-level-bubble red-bubble"
+                style={{ transform: `translate(-50%, ${verticalOffset}px)` }}
               />
             </div>
 
-            <div className="level-readout">
-              <div>H: {levelX.toFixed(1)}°</div>
-              <div>V: {levelY.toFixed(1)}°</div>
+            <div
+              className={`cross-level-center-dot ${
+                centerOk ? "cross-level-center-dot-ok" : ""
+              }`}
+            />
+
+            <div className="cross-level-readout">
+              <div>H: {levelHorizontalDeg.toFixed(1)}°</div>
+              <div>V: {levelVerticalDeg.toFixed(1)}°</div>
             </div>
-          </>
+          </div>
         )}
 
         {currentImage && (
@@ -582,12 +600,12 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Angle tolerance</label>
+              <label className="settings-label">Tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
-                  min="0"
-                  max="15"
+                  min="1"
+                  max="10"
                   step="1"
                   value={angleTolerance}
                   onChange={(e) => setAngleTolerance(Number(e.target.value))}
@@ -658,10 +676,10 @@ function App() {
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Horizontal: {levelX.toFixed(1)}°
+                Horizontal: {levelHorizontalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                Vertical: {levelY.toFixed(1)}°
+                Vertical: {levelVerticalDeg.toFixed(1)}°
               </div>
             </div>
 
