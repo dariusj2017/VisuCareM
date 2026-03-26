@@ -31,16 +31,16 @@ type MarkerDef = {
 };
 
 const frontMarkerDefs: MarkerDef[] = [
-  { key: "topLeft9", label: "Top left 9 mm", svg: marker9top, size: 42 },
-  { key: "topRight9", label: "Top right 9 mm", svg: marker9top, size: 42 },
-  { key: "topCenter6", label: "Top center 6 mm", svg: marker6center, size: 34 },
-  { key: "bottomLeft6", label: "Bottom left 6 mm", svg: marker6bottom, size: 34 },
-  { key: "bottomRight6", label: "Bottom right 6 mm", svg: marker6bottom, size: 34 },
+  { key: "topLeft9", label: "Top left 9 mm", svg: marker9top, size: 54 },
+  { key: "topRight9", label: "Top right 9 mm", svg: marker9top, size: 54 },
+  { key: "topCenter6", label: "Top center 6 mm", svg: marker6center, size: 42 },
+  { key: "bottomLeft6", label: "Bottom left 6 mm", svg: marker6bottom, size: 42 },
+  { key: "bottomRight6", label: "Bottom right 6 mm", svg: marker6bottom, size: 42 },
 ];
 
 const sideMarkerDefs: MarkerDef[] = [
-  { key: "sideTop9", label: "Side top 9 mm", svg: marker9top, size: 42 },
-  { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 34 },
+  { key: "sideTop9", label: "Side top 9 mm", svg: marker9top, size: 54 },
+  { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 42 },
 ];
 
 function App() {
@@ -63,15 +63,18 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [angleTolerance, setAngleTolerance] = useState(5);
 
+  const [markerScale, setMarkerScale] = useState(1);
+  const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
+
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [sideImage, setSideImage] = useState<string | null>(null);
 
-  const [frontMarkers, setFrontMarkers] = useState<Partial<Record<FrontMarkerKey, MarkerPoint>>>(
-    {}
-  );
-  const [sideMarkers, setSideMarkers] = useState<Partial<Record<SideMarkerKey, MarkerPoint>>>(
-    {}
-  );
+  const [frontMarkers, setFrontMarkers] = useState<
+    Partial<Record<FrontMarkerKey, MarkerPoint>>
+  >({});
+  const [sideMarkers, setSideMarkers] = useState<
+    Partial<Record<SideMarkerKey, MarkerPoint>>
+  >({});
 
   const [draggingMarker, setDraggingMarker] = useState<MarkerKey | null>(null);
 
@@ -214,6 +217,7 @@ function App() {
       setSideImage(null);
       setSideMarkers({});
     }
+
     setDraggingMarker(null);
   };
 
@@ -229,16 +233,11 @@ function App() {
     return viewMode === "front" ? frontMarkers : sideMarkers;
   };
 
-  const setCurrentMarkers = (
-    updater:
-      | Partial<Record<FrontMarkerKey, MarkerPoint>>
-      | Partial<Record<SideMarkerKey, MarkerPoint>>
-      | ((prev: any) => any)
-  ) => {
+  const setCurrentMarkers = (updater: any) => {
     if (viewMode === "front") {
-      setFrontMarkers(updater as any);
+      setFrontMarkers(updater);
     } else {
-      setSideMarkers(updater as any);
+      setSideMarkers(updater);
     }
   };
 
@@ -323,33 +322,6 @@ function App() {
           </button>
 
           <button
-            className="icon-btn"
-            type="button"
-            onClick={rotate90}
-            title="Rotate 90°"
-          >
-            ↻
-          </button>
-
-          <button
-            className={`icon-btn ${flipHorizontal ? "active-btn" : ""}`}
-            type="button"
-            onClick={toggleHorizontalFlip}
-            title="Flip horizontal"
-          >
-            H
-          </button>
-
-          <button
-            className={`icon-btn ${flipVertical ? "active-btn" : ""}`}
-            type="button"
-            onClick={toggleVerticalFlip}
-            title="Flip vertical"
-          >
-            V
-          </button>
-
-          <button
             className={`icon-btn ${showSettings ? "active-btn" : ""}`}
             type="button"
             title="Settings"
@@ -397,13 +369,21 @@ function App() {
                   style={{
                     left: `${point.x}px`,
                     top: `${point.y}px`,
-                    width: `${marker.size}px`,
-                    height: `${marker.size}px`,
+                    width: `${marker.size * markerScale}px`,
+                    height: `${marker.size * markerScale}px`,
                   }}
                   onPointerDown={() => handleMarkerPointerDown(marker.key)}
                   title={marker.label}
                 >
-                  <img src={marker.svg} alt={marker.label} draggable={false} />
+                  <img
+                    src={marker.svg}
+                    alt={marker.label}
+                    draggable={false}
+                    style={{
+                      opacity: 1,
+                      filter: `drop-shadow(0 0 0 rgba(0,0,0,0))`,
+                    }}
+                  />
                 </div>
               );
             })}
@@ -449,14 +429,18 @@ function App() {
               <div className="mode-row">
                 <button
                   type="button"
-                  className={`mode-btn ${viewMode === "front" ? "mode-btn-active" : ""}`}
+                  className={`mode-btn ${
+                    viewMode === "front" ? "mode-btn-active" : ""
+                  }`}
                   onClick={() => setViewMode("front")}
                 >
                   FRONT
                 </button>
                 <button
                   type="button"
-                  className={`mode-btn ${viewMode === "side" ? "mode-btn-active" : ""}`}
+                  className={`mode-btn ${
+                    viewMode === "side" ? "mode-btn-active" : ""
+                  }`}
                   onClick={() => setViewMode("side")}
                 >
                   SIDE
@@ -472,6 +456,44 @@ function App() {
             </div>
 
             <div className="settings-group">
+              <label className="settings-label">View transform</label>
+
+              <div className="transform-controls">
+                <button type="button" className="settings-btn" onClick={rotate90}>
+                  Rotate 90°
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${
+                    flipHorizontal ? "settings-btn-active" : ""
+                  }`}
+                  onClick={toggleHorizontalFlip}
+                >
+                  Flip H
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${
+                    flipVertical ? "settings-btn-active" : ""
+                  }`}
+                  onClick={toggleVerticalFlip}
+                >
+                  Flip V
+                </button>
+              </div>
+
+              <div className="settings-summary">Rotation: {rotation}°</div>
+              <div className="settings-summary">
+                Horizontal flip: {flipHorizontal ? "ON" : "OFF"}
+              </div>
+              <div className="settings-summary">
+                Vertical flip: {flipVertical ? "ON" : "OFF"}
+              </div>
+            </div>
+
+            <div className="settings-group">
               <label className="settings-label">Angle tolerance</label>
               <div className="tolerance-row">
                 <input
@@ -483,6 +505,41 @@ function App() {
                   onChange={(e) => setAngleTolerance(Number(e.target.value))}
                 />
                 <div className="tolerance-value">{angleTolerance}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Marker size</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.6"
+                  max="2"
+                  step="0.1"
+                  value={markerScale}
+                  onChange={(e) => setMarkerScale(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{markerScale.toFixed(1)}x</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Marker line width</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={markerStrokeWidth}
+                  onChange={(e) => setMarkerStrokeWidth(Number(e.target.value))}
+                />
+                <div className="tolerance-value">
+                  {markerStrokeWidth.toFixed(1)}x
+                </div>
+              </div>
+              <div className="settings-hint">
+                This will be wired to SVG stroke control next.
               </div>
             </div>
 

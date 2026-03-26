@@ -45,8 +45,8 @@ input {
 }
 
 .brand-logo-image {
-  width: 14px;
-  height: 14px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
   border-radius: 2px;
   background: transparent;
@@ -74,7 +74,7 @@ input {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  min-width: 280px;
+  min-width: 120px;
 }
 
 .icon-btn {
@@ -142,24 +142,16 @@ input {
   color: #222;
 }
 
-.tolerance-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.tolerance-row input[type="range"] {
-  flex: 1;
-}
-
-.tolerance-value {
-  min-width: 48px;
-  font-weight: 700;
-}
-
 .settings-summary {
   font-size: 14px;
   color: #333;
+  margin-bottom: 4px;
+}
+
+.settings-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
 }
 
 .mode-row {
@@ -176,6 +168,41 @@ input {
 }
 
 .mode-btn-active {
+  background: #1267d6;
+  color: white;
+}
+
+.tolerance-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tolerance-row input[type="range"] {
+  flex: 1;
+}
+
+.tolerance-value {
+  min-width: 52px;
+  font-weight: 700;
+}
+
+.transform-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.settings-btn {
+  border: none;
+  background: #eceff3;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.settings-btn-active {
   background: #1267d6;
   color: white;
 }
@@ -337,10 +364,6 @@ input {
     width: 64px;
     height: 64px;
     right: 18px;
-  }
-
-  .topbar-actions {
-    min-width: 220px;
   }
 
   .instruction-title {
