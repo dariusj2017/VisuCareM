@@ -2,6 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
 
+type MarkerKey =
+  | "bottomLeft9"
+  | "bottomRight9"
+  | "topCenterRaised6"
+  | "wrapLeft6"
+  | "wrapRight6";
+
+type MarkerPoint = {
+  x: number;
+  y: number;
+};
+
+type MarkerVisualType =
+  | "marker9"
+  | "marker6Bottom"
+  | "marker6TopRaised";
+
 type BasePointKey =
   | "frameCenter"
   | "leftReference"
@@ -10,13 +27,37 @@ type BasePointKey =
   | "pupilLeft"
   | "pupilRight";
 
+const markerOrder: MarkerKey[] = [
+  "bottomLeft9",
+  "bottomRight9",
+  "topCenterRaised6",
+  "wrapLeft6",
+  "wrapRight6",
+];
+
+const markerLabels: Record<MarkerKey, string> = {
+  bottomLeft9: "Bottom left 9 mm",
+  bottomRight9: "Bottom right 9 mm",
+  topCenterRaised6: "Top raised center marker",
+  wrapLeft6: "Bottom left 6 mm",
+  wrapRight6: "Bottom right 6 mm",
+};
+
+const markerTypeMap: Record<MarkerKey, MarkerVisualType> = {
+  bottomLeft9: "marker9",
+  bottomRight9: "marker9",
+  topCenterRaised6: "marker6TopRaised",
+  wrapLeft6: "marker6Bottom",
+  wrapRight6: "marker6Bottom",
+};
+
 function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const capturedImageRef = useRef<HTMLImageElement | null>(null);
 
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
-
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   const [rotation, setRotation] = useState(0);
@@ -34,6 +75,12 @@ function App() {
     pupilLeft: true,
     pupilRight: true,
   });
+
+  const [markers, setMarkers] = useState<Partial<Record<MarkerKey, MarkerPoint>>>(
+    {}
+  );
+  const [currentMarkerIndex, setCurrentMarkerIndex] = useState(0);
+  const [draggingMarker, setDraggingMarker] = useState<MarkerKey | null>(null);
 
   const startCamera = async () => {
     try {
@@ -123,10 +170,15 @@ function App() {
 
     const imageDataUrl = canvas.toDataURL("image/png");
     setCapturedImage(imageDataUrl);
+    setMarkers({});
+    setCurrentMarkerIndex(0);
   };
 
   const closeCapturedImage = () => {
     setCapturedImage(null);
+    setMarkers({});
+    setCurrentMarkerIndex(0);
+    setDraggingMarker(null);
   };
 
   const toggleBasePoint = (key: BasePointKey) => {
@@ -135,6 +187,73 @@ function App() {
       [key]: !prev[key],
     }));
   };
+
+  const getImageRelativeCoordinates = (
+    clientX: number,
+    clientY: number
+  ): MarkerPoint | null => {
+    const img = capturedImageRef.current;
+    if (!img) return null;
+
+    const rect = img.getBoundingClientRect();
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+
+    return { x, y };
+  };
+
+  const handleCapturedImageClick = (
+    e: React.MouseEvent<HTMLImageElement, MouseEvent>
+  ) => {
+    const point = getImageRelativeCoordinates(e.clientX, e.clientY);
+    if (!point) return;
+
+    const key = markerOrder[currentMarkerIndex];
+    if (!key) return;
+
+    setMarkers((prev) => ({
+      ...prev,
+      [key]: point,
+    }));
+
+    if (currentMarkerIndex < markerOrder.length - 1) {
+      setCurrentMarkerIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleMarkerPointerDown = (key: MarkerKey) => {
+    setDraggingMarker(key);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingMarker) return;
+
+    const point = getImageRelativeCoordinates(e.clientX, e.clientY);
+    if (!point) return;
+
+    setMarkers((prev) => ({
+      ...prev,
+      [draggingMarker]: point,
+    }));
+  };
+
+  const handlePointerUp = () => {
+    setDraggingMarker(null);
+  };
+
+  let scale: number | null = null;
+  if (markers.bottomLeft9 && markers.bottomRight9) {
+    const dx = markers.bottomRight9.x - markers.bottomLeft9.x;
+    const dy = markers.bottomRight9.y - markers.bottomLeft9.y;
+    const distPx = Math.sqrt(dx * dx + dy * dy);
+
+    if (distPx > 0) {
+      scale = 120 / distPx;
+    }
+  }
 
   useEffect(() => {
     startCamera();
@@ -191,7 +310,6 @@ function App() {
 
           <button
             className={`icon-btn ${showSettings ? "active-btn" : ""}`}
-            aria-label="Settings"
             type="button"
             title="Settings"
             onClick={() => setShowSettings((prev) => !prev)}
@@ -202,22 +320,85 @@ function App() {
       </header>
 
       <main className="viewer">
-        <video
-          ref={videoRef}
-          className="camera-video"
-          autoPlay
-          playsInline
-          muted
-          style={{ transform: getVideoTransform() }}
-        />
+        {!capturedImage && (
+          <video
+            ref={videoRef}
+            className="camera-video"
+            autoPlay
+            playsInline
+            muted
+            style={{ transform: getVideoTransform() }}
+          />
+        )}
 
         {capturedImage && (
-          <div className="captured-fullscreen">
+          <div
+            className="captured-fullscreen"
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
             <img
+              ref={capturedImageRef}
               src={capturedImage}
               alt="Captured frame"
               className="captured-image-full"
+              onClick={handleCapturedImageClick}
             />
+
+            {Object.entries(markers).map(([key, point]) => {
+              const typedKey = key as MarkerKey;
+              const markerType = markerTypeMap[typedKey];
+
+              return (
+                <div
+                  key={typedKey}
+                  className={`program-marker ${markerType}`}
+                  style={{
+                    left: `${point.x}px`,
+                    top: `${point.y}px`,
+                  }}
+                  onPointerDown={() => handleMarkerPointerDown(typedKey)}
+                  title={markerLabels[typedKey]}
+                >
+                  {markerType === "marker9" && (
+                    <>
+                      <div className="program-marker-ring" />
+                      <div className="program-marker-inner-circle marker9-inner" />
+                    </>
+                  )}
+
+                  {markerType === "marker6Bottom" && (
+                    <div className="marker6-bottom-shape">
+                      <div className="marker6-bottom-quarter q1" />
+                      <div className="marker6-bottom-quarter q2" />
+                      <div className="marker6-bottom-quarter q3" />
+                      <div className="marker6-bottom-quarter q4" />
+                    </div>
+                  )}
+
+                  {markerType === "marker6TopRaised" && (
+                    <div className="marker6-top-shape">
+                      <div className="marker6-top-quarter q1" />
+                      <div className="marker6-top-quarter q2" />
+                      <div className="marker6-top-quarter q3" />
+                      <div className="marker6-top-quarter q4" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="marker-instruction">
+              Place:{" "}
+              {markerOrder[currentMarkerIndex]
+                ? markerLabels[markerOrder[currentMarkerIndex]]
+                : "Done"}
+            </div>
+
+            {scale && (
+              <div className="scale-info">Scale: {scale.toFixed(3)} mm/px</div>
+            )}
 
             <div className="captured-toolbar">
               <button
