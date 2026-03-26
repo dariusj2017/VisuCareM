@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20mm" height="20mm" viewBox="-10 -10 20 20">
+  <!-- Išorinis apskritimas: 9 mm -->
+  <circle cx="0" cy="0" r="3"
+          stroke="yellow"
+          stroke-width="0.3"
+          fill="none" />
+
+  <!-- Vidinis apskritimas: 6 mm -->
+  <circle cx="0" cy="0" r="1.5"
+          stroke="yellow"
+          stroke-width="0.3"
+          fill="none" />
+</svg>

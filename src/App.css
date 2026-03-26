@@ -74,7 +74,7 @@ input {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  min-width: 240px;
+  min-width: 280px;
 }
 
 .icon-btn {
@@ -157,16 +157,27 @@ input {
   font-weight: 700;
 }
 
-.checkbox-list {
+.settings-summary {
+  font-size: 14px;
+  color: #333;
+}
+
+.mode-row {
   display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 
-.check-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.mode-btn {
+  border: none;
+  background: #eceff3;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.mode-btn-active {
+  background: #1267d6;
+  color: white;
 }
 
 .captured-fullscreen {
@@ -213,262 +224,35 @@ input {
   color: white;
 }
 
-.program-marker {
+.svg-marker {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 110;
   cursor: grab;
   touch-action: none;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.program-marker:active {
+.svg-marker:active {
   cursor: grabbing;
 }
 
-.program-marker.marker9 {
-  width: 44px;
-  height: 44px;
-}
-
-.program-marker.marker6Bottom,
-.program-marker.marker6TopRaised {
-  width: 34px;
-  height: 34px;
-}
-
-.program-marker-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px solid #ffd400;
-  background: transparent;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
-}
-
-.program-marker-inner-circle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: transparent;
-  border: 3px solid #ffd400;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
-}
-
-.marker9-inner {
-  width: 22px;
-  height: 22px;
-}
-
-.marker6-bottom-shape,
-.marker6-top-shape {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px solid #ffd400;
-  background: transparent;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
-}
-
-.marker6-bottom-shape {
-  transform: rotate(45deg);
-}
-
-.marker6-top-shape {
-  transform: rotate(0deg);
-}
-
-.marker6-bottom-quarter,
-.marker6-top-quarter {
-  position: absolute;
-  width: 50%;
-  height: 50%;
-  background: transparent;
-  border: 2px solid transparent;
-}
-
-.marker6-bottom-quarter.q1,
-.marker6-top-quarter.q1 {
-  left: 0;
-  top: 0;
-  background: rgba(255, 212, 0, 0.95);
-}
-
-.marker6-bottom-quarter.q2,
-.marker6-top-quarter.q2 {
-  right: 0;
-  top: 0;
-  background: transparent;
-}
-
-.marker6-bottom-quarter.q3,
-.marker6-top-quarter.q3 {
-  left: 0;
-  bottom: 0;
-  background: transparent;
-}
-
-.marker6-bottom-quarter.q4,
-.marker6-top-quarter.q4 {
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 212, 0, 0.95);
-}
-
-.marker-instruction {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.72);
-  color: white;
-  padding: 10px 14px;
-  border-radius: 10px;
-  z-index: 120;
-}
-
-.scale-info {
-  position: absolute;
-  bottom: 90px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.72);
-  color: #00ff99;
-  padding: 10px 14px;
-  border-radius: 10px;
-  z-index: 120;
+.svg-marker img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-.glasses-guide {
-  position: absolute;
-  left: 50%;
-  top: 14%;
-  width: min(58vw, 520px);
-  height: 240px;
-  transform: translateX(-50%);
-}
-
-.top-line {
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 20px;
-  height: 5px;
-  background: #6faa2f;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(93, 162, 35, 0.35);
-}
-
-.marker {
-  position: absolute;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #f8f8f8;
-  border: 3px solid #96c44f;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
-}
-
-.marker-inner {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: #111;
-  border-radius: 50%;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.black {
-  background: #000;
-  border: 3px solid #1d1d1d;
-}
-
-.left-marker {
-  left: 9%;
-  top: 0;
-}
-
-.center-marker {
-  left: 50%;
-  top: -1px;
-  transform: translateX(-50%);
-}
-
-.right-marker {
-  right: 9%;
-  top: 0;
-}
-
-.left-leg,
-.right-leg {
-  position: absolute;
-  top: 39px;
-  width: 10px;
-  height: 150px;
-  background: #111;
-  border-radius: 999px;
-}
-
-.left-leg {
-  left: calc(9% + 16px);
-}
-
-.right-leg {
-  right: calc(9% + 16px);
-}
-
-.nose-target {
-  position: absolute;
-  left: 50%;
-  top: 60%;
-  width: 110px;
-  height: 110px;
-  transform: translate(-50%, -50%);
-}
-
-.cross {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.18);
-  border: 3px solid rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
-
-.horizontal {
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 18px;
-  transform: translateY(-50%);
-}
-
-.vertical {
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 18px;
-  transform: translateX(-50%);
-}
-
-.cross-dot {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: #7ec242;
-  border-radius: 50%;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
 }
 
 .capture-btn {
@@ -516,48 +300,6 @@ input {
   padding: 16px 22px;
 }
 
-.mini-target {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-}
-
-.mini-h,
-.mini-v {
-  position: absolute;
-  background: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 6px;
-}
-
-.mini-h {
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 10px;
-  transform: translateY(-50%);
-}
-
-.mini-v {
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 10px;
-  transform: translateX(-50%);
-}
-
-.mini-dot {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #7ec242;
-  border-radius: 50%;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
 .instruction {
   flex: 1;
   min-width: 0;
@@ -591,9 +333,14 @@ input {
     font-size: 16px;
   }
 
-  .glasses-guide {
-    width: min(72vw, 460px);
-    top: 15%;
+  .capture-btn {
+    width: 64px;
+    height: 64px;
+    right: 18px;
+  }
+
+  .topbar-actions {
+    min-width: 220px;
   }
 
   .instruction-title {
@@ -602,16 +349,6 @@ input {
 
   .instruction-text {
     font-size: 14px;
-  }
-
-  .capture-btn {
-    width: 64px;
-    height: 64px;
-    right: 18px;
-  }
-
-  .topbar-actions {
-    min-width: 180px;
   }
 }
 
@@ -665,21 +402,5 @@ input {
   .toolbar-btn {
     flex: 1;
     text-align: center;
-  }
-
-  .program-marker.marker9 {
-    width: 38px;
-    height: 38px;
-  }
-
-  .program-marker.marker6Bottom,
-  .program-marker.marker6TopRaised {
-    width: 30px;
-    height: 30px;
-  }
-
-  .marker9-inner {
-    width: 18px;
-    height: 18px;
   }
 }

@@ -1,64 +1,60 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
+import marker9top from "./assets/markers/marker9top.svg";
+import marker6bottom from "./assets/markers/marker6botttom.svg";
+import marker6center from "./assets/markers/marker6center.svg";
 
-type MarkerKey =
-  | "bottomLeft9"
-  | "bottomRight9"
-  | "topCenterRaised6"
-  | "wrapLeft6"
-  | "wrapRight6";
+type ViewMode = "front" | "side";
+
+type FrontMarkerKey =
+  | "topLeft9"
+  | "topRight9"
+  | "topCenter6"
+  | "bottomLeft6"
+  | "bottomRight6";
+
+type SideMarkerKey = "sideTop9" | "sideBottom6";
+
+type MarkerKey = FrontMarkerKey | SideMarkerKey;
 
 type MarkerPoint = {
   x: number;
   y: number;
 };
 
-type MarkerVisualType =
-  | "marker9"
-  | "marker6Bottom"
-  | "marker6TopRaised";
+type MarkerDef = {
+  key: MarkerKey;
+  label: string;
+  svg: string;
+  size: number;
+};
 
-type BasePointKey =
-  | "frameCenter"
-  | "leftReference"
-  | "rightReference"
-  | "bridgeReference"
-  | "pupilLeft"
-  | "pupilRight";
-
-const markerOrder: MarkerKey[] = [
-  "bottomLeft9",
-  "bottomRight9",
-  "topCenterRaised6",
-  "wrapLeft6",
-  "wrapRight6",
+const frontMarkerDefs: MarkerDef[] = [
+  { key: "topLeft9", label: "Top left 9 mm", svg: marker9top, size: 42 },
+  { key: "topRight9", label: "Top right 9 mm", svg: marker9top, size: 42 },
+  { key: "topCenter6", label: "Top center 6 mm", svg: marker6center, size: 34 },
+  { key: "bottomLeft6", label: "Bottom left 6 mm", svg: marker6bottom, size: 34 },
+  { key: "bottomRight6", label: "Bottom right 6 mm", svg: marker6bottom, size: 34 },
 ];
 
-const markerLabels: Record<MarkerKey, string> = {
-  bottomLeft9: "Bottom left 9 mm",
-  bottomRight9: "Bottom right 9 mm",
-  topCenterRaised6: "Top raised center marker",
-  wrapLeft6: "Bottom left 6 mm",
-  wrapRight6: "Bottom right 6 mm",
-};
-
-const markerTypeMap: Record<MarkerKey, MarkerVisualType> = {
-  bottomLeft9: "marker9",
-  bottomRight9: "marker9",
-  topCenterRaised6: "marker6TopRaised",
-  wrapLeft6: "marker6Bottom",
-  wrapRight6: "marker6Bottom",
-};
+const sideMarkerDefs: MarkerDef[] = [
+  { key: "sideTop9", label: "Side top 9 mm", svg: marker9top, size: 42 },
+  { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 34 },
+];
 
 function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const capturedImageRef = useRef<HTMLImageElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
+  const [viewMode, setViewMode] = useState<ViewMode>("front");
+  const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">(
+    "user"
+  );
 
   const [rotation, setRotation] = useState(0);
   const [flipHorizontal, setFlipHorizontal] = useState(true);
@@ -67,28 +63,29 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [angleTolerance, setAngleTolerance] = useState(5);
 
-  const [basePoints, setBasePoints] = useState<Record<BasePointKey, boolean>>({
-    frameCenter: true,
-    leftReference: true,
-    rightReference: true,
-    bridgeReference: true,
-    pupilLeft: true,
-    pupilRight: true,
-  });
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [sideImage, setSideImage] = useState<string | null>(null);
 
-  const [markers, setMarkers] = useState<Partial<Record<MarkerKey, MarkerPoint>>>(
+  const [frontMarkers, setFrontMarkers] = useState<Partial<Record<FrontMarkerKey, MarkerPoint>>>(
     {}
   );
-  const [currentMarkerIndex, setCurrentMarkerIndex] = useState(0);
+  const [sideMarkers, setSideMarkers] = useState<Partial<Record<SideMarkerKey, MarkerPoint>>>(
+    {}
+  );
+
   const [draggingMarker, setDraggingMarker] = useState<MarkerKey | null>(null);
 
   const startCamera = async () => {
     try {
       setError("");
 
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "user",
+          facingMode: cameraFacingMode,
         },
         audio: false,
       });
@@ -101,7 +98,7 @@ function App() {
 
       setIsCameraOn(true);
     } catch (err) {
-      setError("Nepavyko įjungti kameros. Patikrink naršyklės leidimus.");
+      setError("Nepavyko įjungti kameros. Patikrink leidimus.");
       setIsCameraOn(false);
       console.error(err);
     }
@@ -120,6 +117,14 @@ function App() {
     setIsCameraOn(false);
   };
 
+  useEffect(() => {
+    startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, [cameraFacingMode]);
+
   const rotate90 = () => {
     setRotation((prev) => (prev + 90) % 360);
   };
@@ -132,17 +137,21 @@ function App() {
     setFlipVertical((prev) => !prev);
   };
 
+  const switchCamera = () => {
+    setCameraFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+  };
+
   const getVideoTransform = () => {
     const scaleX = flipHorizontal ? -1 : 1;
     const scaleY = flipVertical ? -1 : 1;
     return `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
   };
 
-  const takePhoto = () => {
-    if (!videoRef.current) return;
+  const createImageFromVideo = () => {
+    if (!videoRef.current) return null;
 
     const video = videoRef.current;
-    if (!video.videoWidth || !video.videoHeight) return;
+    if (!video.videoWidth || !video.videoHeight) return null;
 
     const sourceWidth = video.videoWidth;
     const sourceHeight = video.videoHeight;
@@ -153,7 +162,7 @@ function App() {
     canvas.height = rotated ? sourceWidth : sourceHeight;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
 
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -168,60 +177,85 @@ function App() {
     );
     ctx.restore();
 
-    const imageDataUrl = canvas.toDataURL("image/png");
-    setCapturedImage(imageDataUrl);
-    setMarkers({});
-    setCurrentMarkerIndex(0);
+    return canvas.toDataURL("image/png");
   };
 
-  const closeCapturedImage = () => {
-    setCapturedImage(null);
-    setMarkers({});
-    setCurrentMarkerIndex(0);
+  const createFrontInitialMarkers = (): Partial<Record<FrontMarkerKey, MarkerPoint>> => ({
+    topLeft9: { x: 200, y: 140 },
+    topRight9: { x: 520, y: 140 },
+    topCenter6: { x: 360, y: 95 },
+    bottomLeft6: { x: 230, y: 235 },
+    bottomRight6: { x: 490, y: 235 },
+  });
+
+  const createSideInitialMarkers = (): Partial<Record<SideMarkerKey, MarkerPoint>> => ({
+    sideTop9: { x: 380, y: 135 },
+    sideBottom6: { x: 390, y: 250 },
+  });
+
+  const captureCurrentView = () => {
+    const image = createImageFromVideo();
+    if (!image) return;
+
+    if (viewMode === "front") {
+      setFrontImage(image);
+      setFrontMarkers(createFrontInitialMarkers());
+    } else {
+      setSideImage(image);
+      setSideMarkers(createSideInitialMarkers());
+    }
+  };
+
+  const clearCurrentImage = () => {
+    if (viewMode === "front") {
+      setFrontImage(null);
+      setFrontMarkers({});
+    } else {
+      setSideImage(null);
+      setSideMarkers({});
+    }
     setDraggingMarker(null);
   };
 
-  const toggleBasePoint = (key: BasePointKey) => {
-    setBasePoints((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const getCurrentImage = () => {
+    return viewMode === "front" ? frontImage : sideImage;
+  };
+
+  const getCurrentMarkerDefs = () => {
+    return viewMode === "front" ? frontMarkerDefs : sideMarkerDefs;
+  };
+
+  const getCurrentMarkers = () => {
+    return viewMode === "front" ? frontMarkers : sideMarkers;
+  };
+
+  const setCurrentMarkers = (
+    updater:
+      | Partial<Record<FrontMarkerKey, MarkerPoint>>
+      | Partial<Record<SideMarkerKey, MarkerPoint>>
+      | ((prev: any) => any)
+  ) => {
+    if (viewMode === "front") {
+      setFrontMarkers(updater as any);
+    } else {
+      setSideMarkers(updater as any);
+    }
   };
 
   const getImageRelativeCoordinates = (
     clientX: number,
     clientY: number
   ): MarkerPoint | null => {
-    const img = capturedImageRef.current;
+    const img = imageRef.current;
     if (!img) return null;
 
     const rect = img.getBoundingClientRect();
-
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
 
     return { x, y };
-  };
-
-  const handleCapturedImageClick = (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>
-  ) => {
-    const point = getImageRelativeCoordinates(e.clientX, e.clientY);
-    if (!point) return;
-
-    const key = markerOrder[currentMarkerIndex];
-    if (!key) return;
-
-    setMarkers((prev) => ({
-      ...prev,
-      [key]: point,
-    }));
-
-    if (currentMarkerIndex < markerOrder.length - 1) {
-      setCurrentMarkerIndex((prev) => prev + 1);
-    }
   };
 
   const handleMarkerPointerDown = (key: MarkerKey) => {
@@ -234,7 +268,7 @@ function App() {
     const point = getImageRelativeCoordinates(e.clientX, e.clientY);
     if (!point) return;
 
-    setMarkers((prev) => ({
+    setCurrentMarkers((prev: any) => ({
       ...prev,
       [draggingMarker]: point,
     }));
@@ -244,24 +278,20 @@ function App() {
     setDraggingMarker(null);
   };
 
-  let scale: number | null = null;
-  if (markers.bottomLeft9 && markers.bottomRight9) {
-    const dx = markers.bottomRight9.x - markers.bottomLeft9.x;
-    const dy = markers.bottomRight9.y - markers.bottomLeft9.y;
+  const currentImage = getCurrentImage();
+  const currentMarkers = getCurrentMarkers();
+  const currentMarkerDefs = getCurrentMarkerDefs();
+
+  let frontScale: number | null = null;
+  if (frontMarkers.topLeft9 && frontMarkers.topRight9) {
+    const dx = frontMarkers.topRight9.x - frontMarkers.topLeft9.x;
+    const dy = frontMarkers.topRight9.y - frontMarkers.topLeft9.y;
     const distPx = Math.sqrt(dx * dx + dy * dy);
 
     if (distPx > 0) {
-      scale = 120 / distPx;
+      frontScale = 120 / distPx;
     }
   }
-
-  useEffect(() => {
-    startCamera();
-
-    return () => {
-      stopCamera();
-    };
-  }, []);
 
   return (
     <div className="app">
@@ -278,9 +308,20 @@ function App() {
           </div>
         </div>
 
-        <div className="title">FRONT PHOTO</div>
+        <div className="title">
+          {viewMode === "front" ? "FRONT PHOTO" : "SIDE PHOTO"}
+        </div>
 
         <div className="topbar-actions">
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={switchCamera}
+            title="Switch front/back camera"
+          >
+            ⇄
+          </button>
+
           <button
             className="icon-btn"
             type="button"
@@ -320,7 +361,7 @@ function App() {
       </header>
 
       <main className="viewer">
-        {!capturedImage && (
+        {!currentImage && (
           <video
             ref={videoRef}
             className="camera-video"
@@ -331,7 +372,7 @@ function App() {
           />
         )}
 
-        {capturedImage && (
+        {currentImage && (
           <div
             className="captured-fullscreen"
             onPointerMove={handlePointerMove}
@@ -339,83 +380,62 @@ function App() {
             onPointerLeave={handlePointerUp}
           >
             <img
-              ref={capturedImageRef}
-              src={capturedImage}
+              ref={imageRef}
+              src={currentImage}
               alt="Captured frame"
               className="captured-image-full"
-              onClick={handleCapturedImageClick}
             />
 
-            {Object.entries(markers).map(([key, point]) => {
-              const typedKey = key as MarkerKey;
-              const markerType = markerTypeMap[typedKey];
+            {currentMarkerDefs.map((marker) => {
+              const point = (currentMarkers as any)[marker.key];
+              if (!point) return null;
 
               return (
                 <div
-                  key={typedKey}
-                  className={`program-marker ${markerType}`}
+                  key={marker.key}
+                  className="svg-marker"
                   style={{
                     left: `${point.x}px`,
                     top: `${point.y}px`,
+                    width: `${marker.size}px`,
+                    height: `${marker.size}px`,
                   }}
-                  onPointerDown={() => handleMarkerPointerDown(typedKey)}
-                  title={markerLabels[typedKey]}
+                  onPointerDown={() => handleMarkerPointerDown(marker.key)}
+                  title={marker.label}
                 >
-                  {markerType === "marker9" && (
-                    <>
-                      <div className="program-marker-ring" />
-                      <div className="program-marker-inner-circle marker9-inner" />
-                    </>
-                  )}
-
-                  {markerType === "marker6Bottom" && (
-                    <div className="marker6-bottom-shape">
-                      <div className="marker6-bottom-quarter q1" />
-                      <div className="marker6-bottom-quarter q2" />
-                      <div className="marker6-bottom-quarter q3" />
-                      <div className="marker6-bottom-quarter q4" />
-                    </div>
-                  )}
-
-                  {markerType === "marker6TopRaised" && (
-                    <div className="marker6-top-shape">
-                      <div className="marker6-top-quarter q1" />
-                      <div className="marker6-top-quarter q2" />
-                      <div className="marker6-top-quarter q3" />
-                      <div className="marker6-top-quarter q4" />
-                    </div>
-                  )}
+                  <img src={marker.svg} alt={marker.label} draggable={false} />
                 </div>
               );
             })}
-
-            <div className="marker-instruction">
-              Place:{" "}
-              {markerOrder[currentMarkerIndex]
-                ? markerLabels[markerOrder[currentMarkerIndex]]
-                : "Done"}
-            </div>
-
-            {scale && (
-              <div className="scale-info">Scale: {scale.toFixed(3)} mm/px</div>
-            )}
 
             <div className="captured-toolbar">
               <button
                 className="toolbar-btn"
                 type="button"
-                onClick={closeCapturedImage}
+                onClick={clearCurrentImage}
               >
                 Retake
               </button>
 
-              <a
-                href={capturedImage}
-                download="visucarem-photo.png"
-                className="toolbar-btn primary-btn"
-              >
-                Save
-              </a>
+              {viewMode === "front" && (
+                <button
+                  className="toolbar-btn primary-btn"
+                  type="button"
+                  onClick={() => setViewMode("side")}
+                >
+                  Next: Side
+                </button>
+              )}
+
+              {viewMode === "side" && (
+                <button
+                  className="toolbar-btn primary-btn"
+                  type="button"
+                  onClick={() => setViewMode("front")}
+                >
+                  Back to Front
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -423,6 +443,33 @@ function App() {
         {showSettings && (
           <aside className="settings-panel">
             <div className="settings-title">Settings</div>
+
+            <div className="settings-group">
+              <label className="settings-label">Current mode</label>
+              <div className="mode-row">
+                <button
+                  type="button"
+                  className={`mode-btn ${viewMode === "front" ? "mode-btn-active" : ""}`}
+                  onClick={() => setViewMode("front")}
+                >
+                  FRONT
+                </button>
+                <button
+                  type="button"
+                  className={`mode-btn ${viewMode === "side" ? "mode-btn-active" : ""}`}
+                  onClick={() => setViewMode("side")}
+                >
+                  SIDE
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Camera</label>
+              <div className="settings-summary">
+                {cameraFacingMode === "user" ? "Front camera" : "Back camera"}
+              </div>
+            </div>
 
             <div className="settings-group">
               <label className="settings-label">Angle tolerance</label>
@@ -440,97 +487,21 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Base points to search</label>
-
-              <div className="checkbox-list">
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.frameCenter}
-                    onChange={() => toggleBasePoint("frameCenter")}
-                  />
-                  <span>Frame center</span>
-                </label>
-
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.leftReference}
-                    onChange={() => toggleBasePoint("leftReference")}
-                  />
-                  <span>Left reference point</span>
-                </label>
-
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.rightReference}
-                    onChange={() => toggleBasePoint("rightReference")}
-                  />
-                  <span>Right reference point</span>
-                </label>
-
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.bridgeReference}
-                    onChange={() => toggleBasePoint("bridgeReference")}
-                  />
-                  <span>Bridge reference</span>
-                </label>
-
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.pupilLeft}
-                    onChange={() => toggleBasePoint("pupilLeft")}
-                  />
-                  <span>Left pupil</span>
-                </label>
-
-                <label className="check-row">
-                  <input
-                    type="checkbox"
-                    checked={basePoints.pupilRight}
-                    onChange={() => toggleBasePoint("pupilRight")}
-                  />
-                  <span>Right pupil</span>
-                </label>
+              <label className="settings-label">Front scale</label>
+              <div className="settings-summary">
+                {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need FRONT markers"}
               </div>
             </div>
           </aside>
         )}
 
-        {!capturedImage && (
+        {!currentImage && (
           <div className="overlay">
-            <div className="glasses-guide">
-              <div className="top-line"></div>
-
-              <div className="left-marker marker">
-                <div className="marker-inner"></div>
-              </div>
-
-              <div className="center-marker marker black"></div>
-
-              <div className="right-marker marker">
-                <div className="marker-inner"></div>
-              </div>
-
-              <div className="left-leg"></div>
-              <div className="right-leg"></div>
-            </div>
-
-            <div className="nose-target">
-              <div className="cross horizontal"></div>
-              <div className="cross vertical"></div>
-              <div className="cross-dot"></div>
-            </div>
-
             <button
               className="capture-btn"
               aria-label="Take photo"
               type="button"
-              onClick={takePhoto}
+              onClick={captureCurrentView}
             ></button>
 
             {!isCameraOn && !error && (
@@ -541,19 +512,16 @@ function App() {
           </div>
         )}
 
-        {!capturedImage && (
+        {!currentImage && (
           <div className="bottom-panel">
-            <div className="mini-target">
-              <div className="mini-h"></div>
-              <div className="mini-v"></div>
-              <div className="mini-dot"></div>
-            </div>
-
             <div className="instruction">
-              <div className="instruction-title">Centered!</div>
+              <div className="instruction-title">
+                {viewMode === "front" ? "Capture FRONT" : "Capture SIDE"}
+              </div>
               <div className="instruction-text">
-                Keep head straight within {angleTolerance}° tolerance and press
-                the photo button.
+                {viewMode === "front"
+                  ? `Keep head straight within ${angleTolerance}° tolerance and take FRONT image.`
+                  : "Take SIDE image for pantoscopic angle markers."}
               </div>
             </div>
 

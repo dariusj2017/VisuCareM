@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20mm" height="20mm" viewBox="-10 -10 20 20">
+  <!-- Apskritimas 6 mm -->
+  <circle cx="0" cy="0" r="3"
+          stroke="yellow"
+          stroke-width="0.3"
+          fill="none" />
+
+  <!-- Vertikali linija -->
+  <line x1="0" y1="-3" x2="0" y2="3"
+        stroke="yellow"
+        stroke-width="0.3" />
+
+  <!-- Horizontali linija -->
+  <line x1="-3" y1="0" x2="3" y2="0"
+        stroke="yellow"
+        stroke-width="0.3" />
+</svg>
