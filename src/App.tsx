@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
 import marker9top from "./assets/markers/marker9top.svg";
-import marker6bottom from "./assets/markers/marker6botttom.svg";
+import marker6bottom from "./assets/markers/marker6bottom.svg";
 import marker6center from "./assets/markers/marker6center.svg";
 
 type ViewMode = "front" | "side";
