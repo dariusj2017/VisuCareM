@@ -357,14 +357,14 @@ input {
   flex: 0 0 auto;
 }
 
-/* Cross level UI */
+/* New level UI */
 
 .cross-level-ui {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 220px;
-  height: 220px;
+  width: 320px;
+  height: 180px;
   transform: translate(-50%, -50%);
   z-index: 25;
   pointer-events: none;
@@ -372,8 +372,8 @@ input {
 
 .cross-level-horizontal-slot {
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 20px;
+  right: 20px;
   top: 50%;
   height: 18px;
   transform: translateY(-50%);
@@ -384,8 +384,8 @@ input {
 
 .cross-level-vertical-slot {
   position: absolute;
-  top: 10px;
-  bottom: 10px;
+  top: 35px;
+  bottom: 35px;
   left: 50%;
   width: 18px;
   transform: translateX(-50%);
@@ -396,16 +396,11 @@ input {
 
 .cross-level-bubble {
   position: absolute;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.95);
-  background: #d61f1f;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-
-.red-bubble {
-  background: #d61f1f;
 }
 
 .cross-level-center-dot {
@@ -416,19 +411,14 @@ input {
   height: 18px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: #d61f1f;
   border: 2px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-
-.cross-level-center-dot-ok {
-  background: #19c15a;
 }
 
 .cross-level-readout {
   position: absolute;
   left: 50%;
-  top: calc(100% + 14px);
+  top: calc(100% + 12px);
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.62);
   color: white;
@@ -512,8 +502,18 @@ input {
   }
 
   .cross-level-ui {
-    width: 180px;
-    height: 180px;
+    width: 250px;
+    height: 150px;
+  }
+
+  .cross-level-horizontal-slot {
+    left: 10px;
+    right: 10px;
+  }
+
+  .cross-level-vertical-slot {
+    top: 30px;
+    bottom: 30px;
   }
 
   .cross-level-readout {

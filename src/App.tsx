@@ -43,6 +43,16 @@ const sideMarkerDefs: MarkerDef[] = [
   { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 42 },
 ];
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getLevelColor(absValue: number, tolerance: number) {
+  if (absValue <= tolerance) return "#19c15a";
+  if (absValue <= tolerance * 2) return "#f0c419";
+  return "#d61f1f";
+}
+
 function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -61,7 +71,9 @@ function App() {
   const [flipVertical, setFlipVertical] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [angleTolerance, setAngleTolerance] = useState(3);
+
+  const [horizontalTolerance, setHorizontalTolerance] = useState(3);
+  const [verticalTolerance, setVerticalTolerance] = useState(3);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -319,15 +331,17 @@ function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
+    const smoothing = 0.18;
+
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      // Horizontal: left-right tilt
-      setLevelHorizontalDeg(gamma);
+      const nextHorizontal = clamp(gamma, -15, 15);
+      const nextVertical = clamp(beta - 90, -15, 15);
 
-      // Vertical: forward-back tilt around upright holding
-      setLevelVerticalDeg(beta - 90);
+      setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -352,22 +366,17 @@ function App() {
     }
   }
 
-  const horizontalOk = Math.abs(levelHorizontalDeg) <= angleTolerance;
-  const verticalOk = Math.abs(levelVerticalDeg) <= angleTolerance;
-  const centerOk = horizontalOk && verticalOk;
+  const horizontalAbs = Math.abs(levelHorizontalDeg);
+  const verticalAbs = Math.abs(levelVerticalDeg);
 
-  const horizontalRangeDeg = 7;
-  const verticalRangeDeg = 10;
+  const horizontalColor = getLevelColor(horizontalAbs, horizontalTolerance);
+  const verticalColor = getLevelColor(verticalAbs, verticalTolerance);
 
-  const horizontalOffset = Math.max(
-    -72,
-    Math.min(72, (levelHorizontalDeg / horizontalRangeDeg) * 72)
-  );
+  const bothOk =
+    horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
-  const verticalOffset = Math.max(
-    -72,
-    Math.min(72, (levelVerticalDeg / verticalRangeDeg) * 72)
-  );
+  const horizontalOffset = (levelHorizontalDeg / 15) * 110;
+  const verticalOffset = (levelVerticalDeg / 15) * 55;
 
   return (
     <div className="app">
@@ -425,22 +434,27 @@ function App() {
           <div className="cross-level-ui">
             <div className="cross-level-horizontal-slot">
               <div
-                className="cross-level-bubble red-bubble"
-                style={{ transform: `translate(${horizontalOffset}px, -50%)` }}
+                className="cross-level-bubble"
+                style={{
+                  transform: `translate(${horizontalOffset}px, -50%)`,
+                  background: horizontalColor,
+                }}
               />
             </div>
 
             <div className="cross-level-vertical-slot">
               <div
-                className="cross-level-bubble red-bubble"
-                style={{ transform: `translate(-50%, ${verticalOffset}px)` }}
+                className="cross-level-bubble"
+                style={{
+                  transform: `translate(-50%, ${verticalOffset}px)`,
+                  background: verticalColor,
+                }}
               />
             </div>
 
             <div
-              className={`cross-level-center-dot ${
-                centerOk ? "cross-level-center-dot-ok" : ""
-              }`}
+              className="cross-level-center-dot"
+              style={{ background: bothOk ? "#19c15a" : "#d61f1f" }}
             />
 
             <div className="cross-level-readout">
@@ -600,17 +614,32 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Tolerance</label>
+              <label className="settings-label">Horizontal tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
                   min="1"
                   max="10"
                   step="1"
-                  value={angleTolerance}
-                  onChange={(e) => setAngleTolerance(Number(e.target.value))}
+                  value={horizontalTolerance}
+                  onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
                 />
-                <div className="tolerance-value">{angleTolerance}°</div>
+                <div className="tolerance-value">{horizontalTolerance}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Vertical tolerance</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={verticalTolerance}
+                  onChange={(e) => setVerticalTolerance(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{verticalTolerance}°</div>
               </div>
             </div>
 
@@ -717,7 +746,7 @@ function App() {
               </div>
               <div className="instruction-text">
                 {viewMode === "front"
-                  ? `Keep head straight within ${angleTolerance}° tolerance and take FRONT image.`
+                  ? `Keep head straight and level the device before taking FRONT image.`
                   : "Take SIDE image for pantoscopic angle markers."}
               </div>
             </div>
