@@ -47,6 +47,13 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+function normalizeAngle180(angle: number) {
+  let a = angle;
+  while (a > 180) a -= 360;
+  while (a < -180) a += 360;
+  return a;
+}
+
 function getLevelColor(absValue: number, tolerance: number) {
   if (absValue <= tolerance) return "#19c15a";
   if (absValue <= tolerance * 2) return "#f0c419";
@@ -75,6 +82,9 @@ function App() {
   const [horizontalTolerance, setHorizontalTolerance] = useState(3);
   const [verticalTolerance, setVerticalTolerance] = useState(3);
 
+  const [horizontalRange, setHorizontalRange] = useState(15);
+  const [verticalRange, setVerticalRange] = useState(15);
+
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
 
@@ -95,8 +105,20 @@ function App() {
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
-  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
-  const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
+
+  // Horizontal level = rotation about Z axis
+  const [zAngle, setZAngle] = useState(0);
+
+  // Vertical level = rotation about X axis
+  const [xAngle, setXAngle] = useState(0);
+
+  const [zZero, setZZero] = useState<number | null>(null);
+  const [xZero, setXZero] = useState<number | null>(null);
+
+  const [rawAlpha, setRawAlpha] = useState(0);
+  const [rawBeta, setRawBeta] = useState(0);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const startCamera = async () => {
     try {
@@ -148,6 +170,17 @@ function App() {
     };
   }, [cameraFacingMode]);
 
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, []);
+
   const rotate90 = () => {
     setRotation((prev) => (prev + 90) % 360);
   };
@@ -168,6 +201,46 @@ function App() {
     const scaleX = flipHorizontal ? -1 : 1;
     const scaleY = flipVertical ? -1 : 1;
     return `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+  };
+
+  const enterFullscreenAndTryLock = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+
+      const orientationApi = screen.orientation as ScreenOrientation & {
+        lock?: (orientation: string) => Promise<void>;
+      };
+
+      if (orientationApi?.lock) {
+        try {
+          await orientationApi.lock("landscape");
+        } catch {
+          // Safari/iPad may ignore this
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await exitFullscreen();
+    } else {
+      await enterFullscreenAndTryLock();
+    }
   };
 
   const createImageFromVideo = () => {
@@ -328,20 +401,31 @@ function App() {
     }
   };
 
+  const setCurrentAsZero = () => {
+    setZZero(rawAlpha);
+    setXZero(rawBeta);
+  };
+
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.18;
+    const smoothing = 0.12;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      const beta = event.beta ?? 0;
-      const gamma = event.gamma ?? 0;
+      const alpha = event.alpha ?? 0; // about Z
+      const beta = event.beta ?? 0; // about X-ish in deviceorientation space
 
-      const nextHorizontal = clamp(gamma, -15, 15);
-      const nextVertical = clamp(beta - 90, -15, 15);
+      setRawAlpha(alpha);
+      setRawBeta(beta);
 
-      setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
-      setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
+      const zReference = zZero ?? alpha;
+      const xReference = xZero ?? beta;
+
+      const nextZ = clamp(normalizeAngle180(alpha - zReference), -15, 15);
+      const nextX = clamp(beta - xReference, -15, 15);
+
+      setZAngle((prev) => prev + (nextZ - prev) * smoothing);
+      setXAngle((prev) => prev + (nextX - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -349,7 +433,7 @@ function App() {
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
-  }, [levelEnabled]);
+  }, [levelEnabled, zZero, xZero]);
 
   const currentImage = getCurrentImage();
   const currentMarkers = getCurrentMarkers();
@@ -366,17 +450,16 @@ function App() {
     }
   }
 
-  const horizontalAbs = Math.abs(levelHorizontalDeg);
-  const verticalAbs = Math.abs(levelVerticalDeg);
+  const zAbs = Math.abs(zAngle);
+  const xAbs = Math.abs(xAngle);
 
-  const horizontalColor = getLevelColor(horizontalAbs, horizontalTolerance);
-  const verticalColor = getLevelColor(verticalAbs, verticalTolerance);
+  const horizontalColor = getLevelColor(zAbs, horizontalTolerance);
+  const verticalColor = getLevelColor(xAbs, verticalTolerance);
 
-  const bothOk =
-    horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
+  const bothOk = zAbs <= horizontalTolerance && xAbs <= verticalTolerance;
 
-  const horizontalOffset = (levelHorizontalDeg / 15) * 110;
-  const verticalOffset = (levelVerticalDeg / 15) * 55;
+  const horizontalOffset = (zAngle / horizontalRange) * 110;
+  const verticalOffset = (xAngle / verticalRange) * 55;
 
   return (
     <div className="app">
@@ -398,6 +481,15 @@ function App() {
         </div>
 
         <div className="topbar-actions">
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={toggleFullscreen}
+            title="Fullscreen"
+          >
+            {isFullscreen ? "⤢" : "⛶"}
+          </button>
+
           <button
             className="icon-btn"
             type="button"
@@ -458,8 +550,8 @@ function App() {
             />
 
             <div className="cross-level-readout">
-              <div>H: {levelHorizontalDeg.toFixed(1)}°</div>
-              <div>V: {levelVerticalDeg.toFixed(1)}°</div>
+              <div>Z / Horizontal: {zAngle.toFixed(1)}°</div>
+              <div>X / Vertical: {xAngle.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -614,7 +706,7 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Horizontal tolerance</label>
+              <label className="settings-label">Horizontal tolerance (Z)</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -629,7 +721,7 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical tolerance</label>
+              <label className="settings-label">Vertical tolerance (X)</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -640,6 +732,36 @@ function App() {
                   onChange={(e) => setVerticalTolerance(Number(e.target.value))}
                 />
                 <div className="tolerance-value">{verticalTolerance}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Horizontal full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="5"
+                  max="20"
+                  step="1"
+                  value={horizontalRange}
+                  onChange={(e) => setHorizontalRange(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{horizontalRange}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Vertical full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="5"
+                  max="20"
+                  step="1"
+                  value={verticalRange}
+                  onChange={(e) => setVerticalRange(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{verticalRange}°</div>
               </div>
             </div>
 
@@ -684,7 +806,9 @@ function App() {
               <div className="toggle-row">
                 <button
                   type="button"
-                  className={`settings-btn ${showLevelUI ? "settings-btn-active" : ""}`}
+                  className={`settings-btn ${
+                    showLevelUI ? "settings-btn-active" : ""
+                  }`}
                   onClick={() => setShowLevelUI((prev) => !prev)}
                 >
                   {showLevelUI ? "Hide level UI" : "Show level UI"}
@@ -699,16 +823,24 @@ function App() {
                 >
                   Enable live level
                 </button>
+
+                <button
+                  type="button"
+                  className="settings-btn"
+                  onClick={setCurrentAsZero}
+                >
+                  Set current as zero
+                </button>
               </div>
 
               <div className="settings-summary">
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Horizontal: {levelHorizontalDeg.toFixed(1)}°
+                Z / Horizontal: {zAngle.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                Vertical: {levelVerticalDeg.toFixed(1)}°
+                X / Vertical: {xAngle.toFixed(1)}°
               </div>
             </div>
 
@@ -746,7 +878,7 @@ function App() {
               </div>
               <div className="instruction-text">
                 {viewMode === "front"
-                  ? `Keep head straight and level the device before taking FRONT image.`
+                  ? "Level the device and take FRONT image."
                   : "Take SIDE image for pantoscopic angle markers."}
               </div>
             </div>
