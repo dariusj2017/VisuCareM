@@ -402,6 +402,7 @@ input {
 
 .cross-level-bubble-vertical {
   border-color: rgba(0, 255, 255, 0.95);
+  background: rgba(0, 255, 255, 0.3);
 }
 
 .cross-level-center-dot {

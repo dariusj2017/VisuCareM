@@ -327,10 +327,11 @@ export default function App() {
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
-      const gamma = event.gamma ?? 0;
+      const gamma = event.gamma ?? 0;      const alpha = event.alpha ?? 0;
 
-      const nextHorizontal = clamp(beta - 90, -horizontalRange, horizontalRange);
-      const nextVertical = clamp(gamma, -verticalRange, verticalRange);
+      console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
+      const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
+      const nextVertical = clamp(beta - 90, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
