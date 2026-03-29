@@ -487,12 +487,10 @@ export default function App() {
             <div
               className="cross-level-bubble cross-level-bubble-vertical"
               style={{
-                transform: `translate(-50%, calc(-50% + ${verticalOffset}px))`,
+                transform: `translate(-50%, calc(-50% + ${verticalOffset}px + 10px))`,
                 background: Math.abs(levelVerticalDeg) <= verticalTolerance ? "#19c15a" : "#d61f1f",
               }}
             />
-
-            <div className="cross-level-center-dot" />
 
             <div className="cross-level-readout">
               <div>Horizontal: {levelHorizontalDeg.toFixed(1)}°</div>
