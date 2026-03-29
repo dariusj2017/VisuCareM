@@ -520,7 +520,7 @@ export default function App() {
 
             <div className="cross-level-readout">
               <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical: {verticalDisplayDeg.toFixed(1)}°</div>
+              <div>Vertical: {verticalDisplayDeg.toFixed(1)}° (90±30)</div>
             </div>
           </div>
         )}
