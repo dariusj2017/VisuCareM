@@ -474,7 +474,6 @@ export default function App() {
         {step !== "calibration" && showLevelUI && (
           <div className="cross-level-ui">
             <div className="cross-level-horizontal-slot" />
-            <div className="cross-level-vertical-slot" />
 
             <div
               className="cross-level-bubble cross-level-bubble-horizontal"
