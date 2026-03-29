@@ -404,8 +404,6 @@ export default function App() {
 
   const horizontalAbs = Math.abs(levelHorizontalDeg);
   const verticalAbs = Math.abs(levelVerticalDeg);
-  const bothOk =
-    horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
   const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
