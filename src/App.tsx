@@ -71,8 +71,8 @@ export default function App() {
 
   const [horizontalTolerance, setHorizontalTolerance] = useState(3);
   const [verticalTolerance, setVerticalTolerance] = useState(3);
-  const [horizontalRange, setHorizontalRange] = useState(15);
-  const [verticalRange, setVerticalRange] = useState(15);
+  const [horizontalRange, setHorizontalRange] = useState(30);
+  const [verticalRange, setVerticalRange] = useState(30);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -406,8 +406,8 @@ export default function App() {
   const bothOk =
     horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
-  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 80;
-  const verticalOffset = (levelVerticalDeg / verticalRange) * 80;
+  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
+  const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
 
   return (
     <div className="app">
