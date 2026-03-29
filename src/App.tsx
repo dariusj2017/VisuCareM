@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
 import marker9top from "./assets/markers/marker9top.svg";
 import marker6bottom from "./assets/markers/marker6bottom.svg";
 import marker6center from "./assets/markers/marker6center.svg";
 
-type ViewMode = "front" | "side";
+type Step = "frontCapture" | "sideCapture" | "calibration";
 
 type FrontMarkerKey =
   | "topLeft9"
@@ -28,19 +28,20 @@ type MarkerDef = {
   label: string;
   svg: string;
   size: number;
+  target: "front" | "side";
 };
 
 const frontMarkerDefs: MarkerDef[] = [
-  { key: "topLeft9", label: "Top left 9 mm", svg: marker9top, size: 54 },
-  { key: "topRight9", label: "Top right 9 mm", svg: marker9top, size: 54 },
-  { key: "topCenter6", label: "Top center 6 mm", svg: marker6center, size: 42 },
-  { key: "bottomLeft6", label: "Bottom left 6 mm", svg: marker6bottom, size: 42 },
-  { key: "bottomRight6", label: "Bottom right 6 mm", svg: marker6bottom, size: 42 },
+  { key: "topLeft9", label: "Top left 9 mm", svg: marker9top, size: 54, target: "front" },
+  { key: "topRight9", label: "Top right 9 mm", svg: marker9top, size: 54, target: "front" },
+  { key: "topCenter6", label: "Top center 6 mm", svg: marker6center, size: 42, target: "front" },
+  { key: "bottomLeft6", label: "Bottom left 6 mm", svg: marker6bottom, size: 42, target: "front" },
+  { key: "bottomRight6", label: "Bottom right 6 mm", svg: marker6bottom, size: 42, target: "front" },
 ];
 
 const sideMarkerDefs: MarkerDef[] = [
-  { key: "sideTop9", label: "Side top 9 mm", svg: marker9top, size: 54 },
-  { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 42 },
+  { key: "sideTop9", label: "Side top 9 mm", svg: marker9top, size: 54, target: "side" },
+  { key: "sideBottom6", label: "Side bottom 6 mm", svg: marker6bottom, size: 42, target: "side" },
 ];
 
 function clamp(value: number, min: number, max: number) {
@@ -56,12 +57,13 @@ function getLevelColor(absValue: number, tolerance: number) {
 export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const frontImageRef = useRef<HTMLImageElement | null>(null);
+  const sideImageRef = useRef<HTMLImageElement | null>(null);
 
+  const [step, setStep] = useState<Step>("frontCapture");
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
 
-  const [viewMode, setViewMode] = useState<ViewMode>("front");
   const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">(
     "user"
   );
@@ -71,15 +73,24 @@ export default function App() {
   const [flipVertical, setFlipVertical] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [horizontalTolerance, setHorizontalTolerance] = useState(3);
   const [verticalTolerance, setVerticalTolerance] = useState(3);
-
   const [horizontalRange, setHorizontalRange] = useState(15);
   const [verticalRange, setVerticalRange] = useState(15);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
+
+  const [showLevelUI, setShowLevelUI] = useState(true);
+  const [levelPermissionState, setLevelPermissionState] = useState<
+    "idle" | "granted" | "denied" | "unsupported"
+  >("idle");
+  const [levelEnabled, setLevelEnabled] = useState(false);
+
+  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
+  const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [sideImage, setSideImage] = useState<string | null>(null);
@@ -91,18 +102,15 @@ export default function App() {
     Partial<Record<SideMarkerKey, MarkerPoint>>
   >({});
 
-  const [draggingMarker, setDraggingMarker] = useState<MarkerKey | null>(null);
+  const [draggingMarker, setDraggingMarker] = useState<{
+    key: MarkerKey;
+    target: "front" | "side";
+  } | null>(null);
 
-  const [showLevelUI, setShowLevelUI] = useState(true);
-  const [levelPermissionState, setLevelPermissionState] = useState<
-    "idle" | "granted" | "denied" | "unsupported"
-  >("idle");
-  const [levelEnabled, setLevelEnabled] = useState(false);
-
-  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
-  const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
-
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const allMarkerDefs = useMemo(
+    () => [...frontMarkerDefs, ...sideMarkerDefs],
+    []
+  );
 
   const startCamera = async () => {
     try {
@@ -147,18 +155,20 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (step === "calibration") return;
+
     startCamera();
 
     return () => {
       stopCamera();
     };
-  }, [cameraFacingMode]);
+  }, [cameraFacingMode, step]);
 
   useEffect(() => {
-    if (videoRef.current && streamRef.current && !getCurrentImage()) {
+    if (videoRef.current && streamRef.current && step !== "calibration") {
       videoRef.current.srcObject = streamRef.current;
     }
-  }, [viewMode, frontImage, sideImage]);
+  }, [step, cameraFacingMode]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -193,43 +203,27 @@ export default function App() {
     return `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
   };
 
-  const enterFullscreenAndTryLock = async () => {
+  const toggleFullscreen = async () => {
     try {
-      if (!document.fullscreenElement) {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
         await document.documentElement.requestFullscreen();
-      }
 
-      const orientationApi = screen.orientation as ScreenOrientation & {
-        lock?: (orientation: string) => Promise<void>;
-      };
+        const orientationApi = screen.orientation as ScreenOrientation & {
+          lock?: (orientation: string) => Promise<void>;
+        };
 
-      if (orientationApi?.lock) {
-        try {
-          await orientationApi.lock("landscape");
-        } catch {
-          // ignored
+        if (orientationApi?.lock) {
+          try {
+            await orientationApi.lock("landscape");
+          } catch {
+            // ignored
+          }
         }
       }
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const exitFullscreen = async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const toggleFullscreen = async () => {
-    if (document.fullscreenElement) {
-      await exitFullscreen();
-    } else {
-      await enterFullscreenAndTryLock();
     }
   };
 
@@ -267,97 +261,53 @@ export default function App() {
   };
 
   const createFrontInitialMarkers = (): Partial<Record<FrontMarkerKey, MarkerPoint>> => ({
-    topLeft9: { x: 200, y: 140 },
-    topRight9: { x: 520, y: 140 },
-    topCenter6: { x: 360, y: 95 },
-    bottomLeft6: { x: 230, y: 235 },
-    bottomRight6: { x: 490, y: 235 },
+    topLeft9: { x: 180, y: 120 },
+    topRight9: { x: 520, y: 120 },
+    topCenter6: { x: 350, y: 85 },
+    bottomLeft6: { x: 215, y: 255 },
+    bottomRight6: { x: 485, y: 255 },
   });
 
   const createSideInitialMarkers = (): Partial<Record<SideMarkerKey, MarkerPoint>> => ({
-    sideTop9: { x: 380, y: 135 },
-    sideBottom6: { x: 390, y: 250 },
+    sideTop9: { x: 180, y: 110 },
+    sideBottom6: { x: 190, y: 260 },
   });
 
-  const captureCurrentView = () => {
+  const captureCurrentStep = () => {
     const image = createImageFromVideo();
     if (!image) return;
 
-    if (viewMode === "front") {
+    if (step === "frontCapture") {
       setFrontImage(image);
-      setFrontMarkers(createFrontInitialMarkers());
-    } else {
+      setStep("sideCapture");
+      return;
+    }
+
+    if (step === "sideCapture") {
       setSideImage(image);
+      setFrontMarkers(createFrontInitialMarkers());
       setSideMarkers(createSideInitialMarkers());
+      setStep("calibration");
     }
   };
 
-  const clearCurrentImage = () => {
-    if (viewMode === "front") {
-      setFrontImage(null);
-      setFrontMarkers({});
-    } else {
+  const retakeStep = () => {
+    if (step === "sideCapture") {
       setSideImage(null);
-      setSideMarkers({});
     }
-
-    setDraggingMarker(null);
-  };
-
-  const getCurrentImage = () => {
-    return viewMode === "front" ? frontImage : sideImage;
-  };
-
-  const getCurrentMarkerDefs = () => {
-    return viewMode === "front" ? frontMarkerDefs : sideMarkerDefs;
-  };
-
-  const getCurrentMarkers = () => {
-    return viewMode === "front" ? frontMarkers : sideMarkers;
-  };
-
-  const setCurrentMarkers = (updater: any) => {
-    if (viewMode === "front") {
-      setFrontMarkers(updater);
-    } else {
-      setSideMarkers(updater);
+    if (step === "frontCapture") {
+      setFrontImage(null);
     }
   };
 
-  const getImageRelativeCoordinates = (
-    clientX: number,
-    clientY: number
-  ): MarkerPoint | null => {
-    const img = imageRef.current;
-    if (!img) return null;
-
-    const rect = img.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
-
-    return { x, y };
+  const backToFrontCapture = () => {
+    setSideImage(null);
+    setStep("frontCapture");
   };
 
-  const handleMarkerPointerDown = (key: MarkerKey) => {
-    setDraggingMarker(key);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingMarker) return;
-
-    const point = getImageRelativeCoordinates(e.clientX, e.clientY);
-    if (!point) return;
-
-    setCurrentMarkers((prev: any) => ({
-      ...prev,
-      [draggingMarker]: point,
-    }));
-  };
-
-  const handlePointerUp = () => {
-    setDraggingMarker(null);
+  const backToSideCapture = () => {
+    setSideImage(null);
+    setStep("sideCapture");
   };
 
   const requestLevelPermission = async () => {
@@ -400,6 +350,7 @@ export default function App() {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
+      // jei reikės sukeisti ar invertuoti, keisti tik čia
       const nextHorizontal = clamp(beta, -horizontalRange, horizontalRange);
       const nextVertical = clamp(gamma, -verticalRange, verticalRange);
 
@@ -414,16 +365,59 @@ export default function App() {
     };
   }, [levelEnabled, horizontalRange, verticalRange]);
 
-  const currentImage = getCurrentImage();
-  const currentMarkers = getCurrentMarkers();
-  const currentMarkerDefs = getCurrentMarkerDefs();
+  const getRelativeCoordinates = (
+    clientX: number,
+    clientY: number,
+    target: "front" | "side"
+  ): MarkerPoint | null => {
+    const ref = target === "front" ? frontImageRef.current : sideImageRef.current;
+    if (!ref) return null;
+
+    const rect = ref.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+
+    return { x, y };
+  };
+
+  const handleMarkerPointerDown = (key: MarkerKey, target: "front" | "side") => {
+    setDraggingMarker({ key, target });
+  };
+
+  const handleCalibrationPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingMarker) return;
+
+    const point = getRelativeCoordinates(
+      e.clientX,
+      e.clientY,
+      draggingMarker.target
+    );
+    if (!point) return;
+
+    if (draggingMarker.target === "front") {
+      setFrontMarkers((prev) => ({
+        ...prev,
+        [draggingMarker.key as FrontMarkerKey]: point,
+      }));
+    } else {
+      setSideMarkers((prev) => ({
+        ...prev,
+        [draggingMarker.key as SideMarkerKey]: point,
+      }));
+    }
+  };
+
+  const handleCalibrationPointerUp = () => {
+    setDraggingMarker(null);
+  };
 
   let frontScale: number | null = null;
   if (frontMarkers.topLeft9 && frontMarkers.topRight9) {
     const dx = frontMarkers.topRight9.x - frontMarkers.topLeft9.x;
     const dy = frontMarkers.topRight9.y - frontMarkers.topLeft9.y;
     const distPx = Math.sqrt(dx * dx + dy * dy);
-
     if (distPx > 0) {
       frontScale = 120 / distPx;
     }
@@ -434,7 +428,6 @@ export default function App() {
 
   const horizontalColor = getLevelColor(horizontalAbs, horizontalTolerance);
   const verticalColor = getLevelColor(verticalAbs, verticalTolerance);
-
   const bothOk =
     horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
@@ -457,7 +450,9 @@ export default function App() {
         </div>
 
         <div className="title">
-          {viewMode === "front" ? "FRONT PHOTO" : "SIDE PHOTO"}
+          {step === "frontCapture" && "FRONT PHOTO"}
+          {step === "sideCapture" && "SIDE PHOTO"}
+          {step === "calibration" && "CALIBRATION"}
         </div>
 
         <div className="topbar-actions">
@@ -491,7 +486,7 @@ export default function App() {
       </header>
 
       <main className="viewer">
-        {!currentImage && (
+        {step !== "calibration" && (
           <video
             ref={videoRef}
             className="camera-video"
@@ -502,7 +497,7 @@ export default function App() {
           />
         )}
 
-        {showLevelUI && !currentImage && (
+        {step !== "calibration" && showLevelUI && (
           <div className="cross-level-ui">
             <div className="cross-level-horizontal-slot">
               <div
@@ -536,78 +531,185 @@ export default function App() {
           </div>
         )}
 
-        {currentImage && (
-          <div
-            className="captured-fullscreen"
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-          >
-            <img
-              ref={imageRef}
-              src={currentImage}
-              alt="Captured frame"
-              className="captured-image-full"
-            />
+        {step === "frontCapture" && (
+          <>
+            <div className="front-capture-overlay">
+              <div className="front-dim front-dim-left" />
+              <div className="front-dim front-dim-right" />
 
-            {currentMarkerDefs.map((marker) => {
-              const point = (currentMarkers as any)[marker.key];
-              if (!point) return null;
+              <div className="front-clear-window">
+                <div className="front-dashed front-dashed-left" />
+                <div className="front-dashed front-dashed-right" />
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={marker.key}
-                  className="svg-marker"
-                  style={{
-                    left: `${point.x}px`,
-                    top: `${point.y}px`,
-                    width: `${marker.size * markerScale}px`,
-                    height: `${marker.size * markerScale}px`,
-                  }}
-                  onPointerDown={() => handleMarkerPointerDown(marker.key)}
-                  title={marker.label}
-                >
-                  <img
-                    src={marker.svg}
-                    alt={marker.label}
-                    draggable={false}
-                    style={{
-                      opacity: 1,
-                      filter: `drop-shadow(0 0 0 rgba(0,0,0,0))`,
-                    }}
-                  />
+            <div className="overlay">
+              <button
+                className="capture-btn"
+                aria-label="Take front photo"
+                type="button"
+                onClick={captureCurrentStep}
+              ></button>
+
+              {!isCameraOn && !error && (
+                <div className="camera-status">Jungiama kamera...</div>
+              )}
+
+              {error && <div className="camera-status error">{error}</div>}
+            </div>
+
+            <div className="bottom-panel">
+              <div className="instruction">
+                <div className="instruction-title">Capture FRONT</div>
+                <div className="instruction-text">
+                  Align the face inside the clear window between the dashed lines.
                 </div>
-              );
-            })}
+              </div>
 
-            <div className="captured-toolbar">
+              <div className="mini-brand">VC</div>
+            </div>
+          </>
+        )}
+
+        {step === "sideCapture" && (
+          <>
+            <div className="overlay">
+              <button
+                className="capture-btn"
+                aria-label="Take side photo"
+                type="button"
+                onClick={captureCurrentStep}
+              ></button>
+
+              <button
+                className="side-back-btn"
+                type="button"
+                onClick={backToFrontCapture}
+              >
+                Back
+              </button>
+
+              {!isCameraOn && !error && (
+                <div className="camera-status">Jungiama kamera...</div>
+              )}
+
+              {error && <div className="camera-status error">{error}</div>}
+            </div>
+
+            <div className="bottom-panel">
+              <div className="instruction">
+                <div className="instruction-title">Capture SIDE</div>
+                <div className="instruction-text">
+                  Take the side photo. Calibration will start after this step.
+                </div>
+              </div>
+
+              <div className="mini-brand">VC</div>
+            </div>
+          </>
+        )}
+
+        {step === "calibration" && (
+          <div
+            className="calibration-layout"
+            onPointerMove={handleCalibrationPointerMove}
+            onPointerUp={handleCalibrationPointerUp}
+            onPointerLeave={handleCalibrationPointerUp}
+          >
+            <div className="calibration-front-panel">
+              <div className="panel-header">
+                <span>FRONT</span>
+              </div>
+
+              <div className="calibration-image-wrap">
+                {frontImage && (
+                  <img
+                    ref={frontImageRef}
+                    src={frontImage}
+                    alt="Front calibration"
+                    className="calibration-image"
+                  />
+                )}
+
+                {frontMarkerDefs.map((marker) => {
+                  const point = frontMarkers[marker.key as FrontMarkerKey];
+                  if (!point) return null;
+
+                  return (
+                    <div
+                      key={marker.key}
+                      className="svg-marker"
+                      style={{
+                        left: `${point.x}px`,
+                        top: `${point.y}px`,
+                        width: `${marker.size * markerScale}px`,
+                        height: `${marker.size * markerScale}px`,
+                      }}
+                      onPointerDown={() =>
+                        handleMarkerPointerDown(marker.key, "front")
+                      }
+                      title={marker.label}
+                    >
+                      <img src={marker.svg} alt={marker.label} draggable={false} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="calibration-side-panel">
+              <div className="panel-header">
+                <span>SIDE</span>
+              </div>
+
+              <div className="calibration-image-wrap">
+                {sideImage && (
+                  <img
+                    ref={sideImageRef}
+                    src={sideImage}
+                    alt="Side calibration"
+                    className="calibration-image"
+                  />
+                )}
+
+                {sideMarkerDefs.map((marker) => {
+                  const point = sideMarkers[marker.key as SideMarkerKey];
+                  if (!point) return null;
+
+                  return (
+                    <div
+                      key={marker.key}
+                      className="svg-marker"
+                      style={{
+                        left: `${point.x}px`,
+                        top: `${point.y}px`,
+                        width: `${marker.size * markerScale}px`,
+                        height: `${marker.size * markerScale}px`,
+                      }}
+                      onPointerDown={() =>
+                        handleMarkerPointerDown(marker.key, "side")
+                      }
+                      title={marker.label}
+                    >
+                      <img src={marker.svg} alt={marker.label} draggable={false} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="calibration-toolbar">
               <button
                 className="toolbar-btn"
                 type="button"
-                onClick={clearCurrentImage}
+                onClick={backToSideCapture}
               >
-                Retake
+                Retake Side
               </button>
 
-              {viewMode === "front" && (
-                <button
-                  className="toolbar-btn primary-btn"
-                  type="button"
-                  onClick={() => setViewMode("side")}
-                >
-                  Next: Side
-                </button>
-              )}
-
-              {viewMode === "side" && (
-                <button
-                  className="toolbar-btn primary-btn"
-                  type="button"
-                  onClick={() => setViewMode("front")}
-                >
-                  Back to Front
-                </button>
-              )}
+              <div className="calibration-scale-box">
+                {frontScale ? `Front scale: ${frontScale.toFixed(3)} mm/px` : "Front scale: n/a"}
+              </div>
             </div>
           </div>
         )}
@@ -617,27 +719,8 @@ export default function App() {
             <div className="settings-title">Settings</div>
 
             <div className="settings-group">
-              <label className="settings-label">Current mode</label>
-              <div className="mode-row">
-                <button
-                  type="button"
-                  className={`mode-btn ${
-                    viewMode === "front" ? "mode-btn-active" : ""
-                  }`}
-                  onClick={() => setViewMode("front")}
-                >
-                  FRONT
-                </button>
-                <button
-                  type="button"
-                  className={`mode-btn ${
-                    viewMode === "side" ? "mode-btn-active" : ""
-                  }`}
-                  onClick={() => setViewMode("side")}
-                >
-                  SIDE
-                </button>
-              </div>
+              <label className="settings-label">Step</label>
+              <div className="settings-summary">{step}</div>
             </div>
 
             <div className="settings-group">
@@ -776,7 +859,7 @@ export default function App() {
                 </div>
               </div>
               <div className="settings-hint">
-                This will be wired to SVG stroke control next.
+                Future-ready UI for SVG stroke control.
               </div>
             </div>
 
@@ -819,44 +902,10 @@ export default function App() {
             <div className="settings-group">
               <label className="settings-label">Front scale</label>
               <div className="settings-summary">
-                {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need FRONT markers"}
+                {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need calibration"}
               </div>
             </div>
           </aside>
-        )}
-
-        {!currentImage && (
-          <div className="overlay">
-            <button
-              className="capture-btn"
-              aria-label="Take photo"
-              type="button"
-              onClick={captureCurrentView}
-            ></button>
-
-            {!isCameraOn && !error && (
-              <div className="camera-status">Jungiama kamera...</div>
-            )}
-
-            {error && <div className="camera-status error">{error}</div>}
-          </div>
-        )}
-
-        {!currentImage && (
-          <div className="bottom-panel">
-            <div className="instruction">
-              <div className="instruction-title">
-                {viewMode === "front" ? "Capture FRONT" : "Capture SIDE"}
-              </div>
-              <div className="instruction-text">
-                {viewMode === "front"
-                  ? "Level the device and take FRONT image."
-                  : "Take SIDE image for pantoscopic angle markers."}
-              </div>
-            </div>
-
-            <div className="mini-brand">VC</div>
-          </div>
         )}
       </main>
     </div>
