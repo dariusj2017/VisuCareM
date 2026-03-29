@@ -359,8 +359,6 @@ export default function App() {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
   }, [levelEnabled, horizontalRange, verticalRange]);
-    };
-  }, [levelEnabled, horizontalRange, verticalRange]);
 
   const getRelativeCoordinates = (
     clientX: number,
