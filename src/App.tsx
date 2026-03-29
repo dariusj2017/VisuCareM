@@ -478,10 +478,18 @@ export default function App() {
             <div className="cross-level-vertical-slot" />
 
             <div
-              className="cross-level-bubble"
+              className="cross-level-bubble cross-level-bubble-horizontal"
               style={{
-                transform: `translate(calc(-50% + ${horizontalOffset}px), calc(-50% + ${verticalOffset}px))`,
-                background: bothOk ? "#19c15a" : "#d61f1f",
+                transform: `translate(calc(-50% + ${horizontalOffset}px), -50%)`,
+                background: Math.abs(levelHorizontalDeg) <= horizontalTolerance ? "#19c15a" : "#d61f1f",
+              }}
+            />
+
+            <div
+              className="cross-level-bubble cross-level-bubble-vertical"
+              style={{
+                transform: `translate(-50%, calc(-50% + ${verticalOffset}px))`,
+                background: Math.abs(levelVerticalDeg) <= verticalTolerance ? "#19c15a" : "#d61f1f",
               }}
             />
 
