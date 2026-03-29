@@ -48,12 +48,6 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function getLevelColor(absValue: number, tolerance: number) {
-  if (absValue <= tolerance) return "#19c15a";
-  if (absValue <= tolerance * 2) return "#f0c419";
-  return "#d61f1f";
-}
-
 export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -409,9 +403,6 @@ export default function App() {
 
   const horizontalAbs = Math.abs(levelHorizontalDeg);
   const verticalAbs = Math.abs(levelVerticalDeg);
-
-  const horizontalColor = getLevelColor(horizontalAbs, horizontalTolerance);
-  const verticalColor = getLevelColor(verticalAbs, verticalTolerance);
   const bothOk =
     horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
@@ -483,30 +474,18 @@ export default function App() {
 
         {step !== "calibration" && showLevelUI && (
           <div className="cross-level-ui">
-            <div className="cross-level-horizontal-slot">
-              <div
-                className="cross-level-bubble"
-                style={{
-                  transform: `translate(${horizontalOffset}px, -50%)`,
-                  background: horizontalColor,
-                }}
-              />
-            </div>
-
-            <div className="cross-level-vertical-slot">
-              <div
-                className="cross-level-bubble"
-                style={{
-                  transform: `translate(-50%, ${verticalOffset}px)`,
-                  background: verticalColor,
-                }}
-              />
-            </div>
+            <div className="cross-level-horizontal-slot" />
+            <div className="cross-level-vertical-slot" />
 
             <div
-              className="cross-level-center-dot"
-              style={{ background: bothOk ? "#19c15a" : "#d61f1f" }}
+              className="cross-level-bubble"
+              style={{
+                transform: `translate(calc(-50% + ${horizontalOffset}px), calc(-50% + ${verticalOffset}px))`,
+                background: bothOk ? "#19c15a" : "#d61f1f",
+              }}
             />
+
+            <div className="cross-level-center-dot" />
 
             <div className="cross-level-readout">
               <div>Horizontal: {levelHorizontalDeg.toFixed(1)}°</div>
