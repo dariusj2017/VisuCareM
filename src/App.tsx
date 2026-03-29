@@ -406,8 +406,8 @@ export default function App() {
   const bothOk =
     horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
-  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 110;
-  const verticalOffset = (levelVerticalDeg / verticalRange) * 55;
+  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 80;
+  const verticalOffset = (levelVerticalDeg / verticalRange) * 80;
 
   return (
     <div className="app">
