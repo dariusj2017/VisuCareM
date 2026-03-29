@@ -342,12 +342,12 @@ export default function App() {
       console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
 
       // Horizontalus lygis: gamma ašis, statmenas ekranui.
-      // 0 = plokščiai, +/-90 = pasisukimas horizontaliai.
+      // 0 = iPad lygus, +/-90 = pasisukimas horizontaliai.
       const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
 
-      // Vertikalus lygis: apie ilgąją kraštinę (gamma) + 90°.
-      // 0 = kuomet γ=-90 (iPad pasuktas vertikaliai į šoną), 90 = tiesiai.
-      const nextVertical = clamp(gamma + 90, -verticalRange, verticalRange);
+      // Vertikalus lygis: gamma su -90° nuokrypiu, kad tiesiai (iPad portretas) būtų 0.
+      // Tai leidžia rodyti 90°+/- kaip ekranui prašyta.
+      const nextVertical = clamp(gamma - 90, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
@@ -421,6 +421,13 @@ export default function App() {
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
   const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
 
+  // Rodyti verticalaus gulsčiuko matavimą kaip 90° +/-.
+  const verticalDisplayDeg = levelVerticalDeg + 90;
+  const horizontalDisplayDeg = levelHorizontalDeg;
+
+  const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
+  const verticalOk = Math.abs(verticalDisplayDeg - 90) <= verticalTolerance;
+
   return (
     <div className="app">
       <header className="topbar">
@@ -493,7 +500,7 @@ export default function App() {
               className="cross-level-bubble cross-level-bubble-horizontal"
               style={{
                 transform: `translate(calc(-50% + ${horizontalOffset}px), -50%)`,
-                background: Math.abs(levelHorizontalDeg) <= horizontalTolerance ? "#19c15a" : "#d61f1f",
+                background: horizontalOk ? "#19c15a" : "#d61f1f",
               }}
             />
 
@@ -501,13 +508,13 @@ export default function App() {
               className="cross-level-bubble cross-level-bubble-vertical"
               style={{
                 transform: `translate(-50%, calc(-50% + ${verticalOffset}px + 10px))`,
-                background: Math.abs(levelVerticalDeg) <= verticalTolerance ? "#19c15a" : "#d61f1f",
+                background: verticalOk ? "#19c15a" : "#d61f1f",
               }}
             />
 
             <div className="cross-level-readout">
-              <div>Horizontal: {levelHorizontalDeg.toFixed(1)}°</div>
-              <div>Vertical: {levelVerticalDeg.toFixed(1)}°</div>
+              <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
+              <div>Vertical: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
