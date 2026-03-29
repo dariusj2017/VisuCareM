@@ -345,10 +345,9 @@ export default function App() {
       // 0 = plokščiai, +/-90 = pasisukimas horizontaliai.
       const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
 
-      // Vertikalus lygis: beta-90, kad portrete lygis būtų 0.
-      // Kai beta=90 (portretas), vertikalus gulsčiukas 0.
-      // Kai iPad guli, beta = 0, tai vertikalus = -90.
-      const nextVertical = clamp(beta - 90, -verticalRange, verticalRange);
+      // Vertikalus lygis: apie ilgąją kraštinę (gamma) + 90°.
+      // 0 = kuomet γ=-90 (iPad pasuktas vertikaliai į šoną), 90 = tiesiai.
+      const nextVertical = clamp(gamma + 90, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
