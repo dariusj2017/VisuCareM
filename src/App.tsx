@@ -402,9 +402,6 @@ export default function App() {
     }
   }
 
-  const horizontalAbs = Math.abs(levelHorizontalDeg);
-  const verticalAbs = Math.abs(levelVerticalDeg);
-
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
   const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
 
