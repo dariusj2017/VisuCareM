@@ -345,9 +345,9 @@ export default function App() {
       // 0 = iPad lygus, +/-90 = pasisukimas horizontaliai.
       const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
 
-      // Vertikalus lygis: gamma su -90° nuokrypiu, kad tiesiai (iPad portretas) būtų 0.
-      // Tai leidžia rodyti 90°+/- kaip ekranui prašyta.
-      const nextVertical = clamp(gamma - 90, -verticalRange, verticalRange);
+      // Vertikalus lygis: matuoti kaip beta laipsnius su 90° centru.
+      // 90° = vertikaliai tiesiai, +/- 30° per kairę/dešinę.
+      const nextVertical = clamp(beta, 60, 120);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
@@ -418,11 +418,13 @@ export default function App() {
     }
   }
 
+  // horizontalRange/verticalRange dabar 30 (±30°)
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
-  const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
+  // levelVerticalDeg = 60..120, todėl atimame 90°, kad gautume -30..+30
+  const verticalOffset = ((levelVerticalDeg - 90) / verticalRange) * 90;
 
-  // Rodyti verticalaus gulsčiuko matavimą kaip 90° +/-.
-  const verticalDisplayDeg = levelVerticalDeg + 90;
+  // Rodyti vertikalų kampą tiesiogiai (90 ± 30)
+  const verticalDisplayDeg = levelVerticalDeg;
   const horizontalDisplayDeg = levelHorizontalDeg;
 
   const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
