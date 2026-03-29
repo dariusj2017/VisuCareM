@@ -69,10 +69,10 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const [horizontalTolerance, setHorizontalTolerance] = useState(3);
-  const [verticalTolerance, setVerticalTolerance] = useState(3);
-  const [horizontalRange, setHorizontalRange] = useState(30);
-  const [verticalRange, setVerticalRange] = useState(30);
+  const [horizontalTolerance, setHorizontalTolerance] = useState(5);
+  const [verticalTolerance, setVerticalTolerance] = useState(5);
+  const [horizontalRange, setHorizontalRange] = useState(15);
+  const [verticalRange, setVerticalRange] = useState(15);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -323,7 +323,7 @@ export default function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.12;
+    const smoothing = 0.06; // lėtesnis filtravimas mažina triukšmą ir reaguoja švelniau
 
     // ------------- ORIENTACIJOS KONVERTAVIMAS Į GULŠČIUKĄ -------------
     // DeviceOrientationEvent:
