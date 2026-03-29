@@ -325,13 +325,30 @@ export default function App() {
 
     const smoothing = 0.12;
 
+    // ------------- ORIENTACIJOS KONVERTAVIMAS Į GULŠČIUKĄ -------------
+    // DeviceOrientationEvent:
+    //   alpha = pasisukimas aplink ekrano normalę (kompasinis pasisukimas)
+    //   beta = pasisukimas aplink įrenginio kairė/dešinė ašį (priekinis/galinis pakrypimas)
+    //   gamma = pasisukimas aplink įrenginio viršus/apačią ašį (šoninis pakrypimas)
+    //
+    // Tvarkos:
+    //   - horizontalus gulsčiukas (kryžiaus aukštyje): gamma
+    //   - vertikalus gulsčiukas (kryžiaus šonuose): beta - 90 (portreto režimui)
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
-      const gamma = event.gamma ?? 0;      const alpha = event.alpha ?? 0;
+      const gamma = event.gamma ?? 0;
+      const alpha = event.alpha ?? 0;
 
       console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
-      const nextHorizontal = clamp(90 - beta, -horizontalRange, horizontalRange);
-      const nextVertical = clamp(gamma, -verticalRange, verticalRange);
+
+      // Horizontalus lygis: gamma ašis, statmenas ekranui.
+      // 0 = plokščiai, +/-90 = pasisukimas horizontaliai.
+      const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
+
+      // Vertikalus lygis: beta-90, kad portrete lygis būtų 0.
+      // Kai beta=90 (portretas), vertikalus gulsčiukas 0.
+      // Kai iPad guli, beta = 0, tai vertikalus = -90.
+      const nextVertical = clamp(beta - 90, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
@@ -341,6 +358,8 @@ export default function App() {
 
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
+    };
+  }, [levelEnabled, horizontalRange, verticalRange]);
     };
   }, [levelEnabled, horizontalRange, verticalRange]);
 
