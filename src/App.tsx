@@ -47,20 +47,13 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function normalizeAngle180(angle: number) {
-  let a = angle;
-  while (a > 180) a -= 360;
-  while (a < -180) a += 360;
-  return a;
-}
-
 function getLevelColor(absValue: number, tolerance: number) {
   if (absValue <= tolerance) return "#19c15a";
   if (absValue <= tolerance * 2) return "#f0c419";
   return "#d61f1f";
 }
 
-function App() {
+export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -106,17 +99,8 @@ function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  // Horizontal level = rotation about Z axis
-  const [zAngle, setZAngle] = useState(0);
-
-  // Vertical level = rotation about X axis
-  const [xAngle, setXAngle] = useState(0);
-
-  const [zZero, setZZero] = useState<number | null>(null);
-  const [xZero, setXZero] = useState<number | null>(null);
-
-  const [rawAlpha, setRawAlpha] = useState(0);
-  const [rawBeta, setRawBeta] = useState(0);
+  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
+  const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -171,6 +155,12 @@ function App() {
   }, [cameraFacingMode]);
 
   useEffect(() => {
+    if (videoRef.current && streamRef.current && !getCurrentImage()) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [viewMode, frontImage, sideImage]);
+
+  useEffect(() => {
     const onFullscreenChange = () => {
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
@@ -217,7 +207,7 @@ function App() {
         try {
           await orientationApi.lock("landscape");
         } catch {
-          // Safari/iPad may ignore this
+          // ignored
         }
       }
     } catch (err) {
@@ -401,31 +391,20 @@ function App() {
     }
   };
 
-  const setCurrentAsZero = () => {
-    setZZero(rawAlpha);
-    setXZero(rawBeta);
-  };
-
   useEffect(() => {
     if (!levelEnabled) return;
 
     const smoothing = 0.12;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      const alpha = event.alpha ?? 0; // about Z
-      const beta = event.beta ?? 0; // about X-ish in deviceorientation space
+      const beta = event.beta ?? 0;
+      const gamma = event.gamma ?? 0;
 
-      setRawAlpha(alpha);
-      setRawBeta(beta);
+      const nextHorizontal = clamp(beta, -horizontalRange, horizontalRange);
+      const nextVertical = clamp(gamma, -verticalRange, verticalRange);
 
-      const zReference = zZero ?? alpha;
-      const xReference = xZero ?? beta;
-
-      const nextZ = clamp(normalizeAngle180(alpha - zReference), -15, 15);
-      const nextX = clamp(beta - xReference, -15, 15);
-
-      setZAngle((prev) => prev + (nextZ - prev) * smoothing);
-      setXAngle((prev) => prev + (nextX - prev) * smoothing);
+      setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -433,7 +412,7 @@ function App() {
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
-  }, [levelEnabled, zZero, xZero]);
+  }, [levelEnabled, horizontalRange, verticalRange]);
 
   const currentImage = getCurrentImage();
   const currentMarkers = getCurrentMarkers();
@@ -450,16 +429,17 @@ function App() {
     }
   }
 
-  const zAbs = Math.abs(zAngle);
-  const xAbs = Math.abs(xAngle);
+  const horizontalAbs = Math.abs(levelHorizontalDeg);
+  const verticalAbs = Math.abs(levelVerticalDeg);
 
-  const horizontalColor = getLevelColor(zAbs, horizontalTolerance);
-  const verticalColor = getLevelColor(xAbs, verticalTolerance);
+  const horizontalColor = getLevelColor(horizontalAbs, horizontalTolerance);
+  const verticalColor = getLevelColor(verticalAbs, verticalTolerance);
 
-  const bothOk = zAbs <= horizontalTolerance && xAbs <= verticalTolerance;
+  const bothOk =
+    horizontalAbs <= horizontalTolerance && verticalAbs <= verticalTolerance;
 
-  const horizontalOffset = (zAngle / horizontalRange) * 110;
-  const verticalOffset = (xAngle / verticalRange) * 55;
+  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 110;
+  const verticalOffset = (levelVerticalDeg / verticalRange) * 55;
 
   return (
     <div className="app">
@@ -550,8 +530,8 @@ function App() {
             />
 
             <div className="cross-level-readout">
-              <div>Z / Horizontal: {zAngle.toFixed(1)}°</div>
-              <div>X / Vertical: {xAngle.toFixed(1)}°</div>
+              <div>Horizontal: {levelHorizontalDeg.toFixed(1)}°</div>
+              <div>Vertical: {levelVerticalDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -706,7 +686,7 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Horizontal tolerance (Z)</label>
+              <label className="settings-label">Horizontal tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -721,7 +701,7 @@ function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical tolerance (X)</label>
+              <label className="settings-label">Vertical tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -823,24 +803,16 @@ function App() {
                 >
                   Enable live level
                 </button>
-
-                <button
-                  type="button"
-                  className="settings-btn"
-                  onClick={setCurrentAsZero}
-                >
-                  Set current as zero
-                </button>
               </div>
 
               <div className="settings-summary">
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Z / Horizontal: {zAngle.toFixed(1)}°
+                Horizontal: {levelHorizontalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                X / Vertical: {xAngle.toFixed(1)}°
+                Vertical: {levelVerticalDeg.toFixed(1)}°
               </div>
             </div>
 
@@ -890,5 +862,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

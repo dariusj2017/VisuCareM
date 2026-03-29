@@ -357,8 +357,6 @@ input {
   flex: 0 0 auto;
 }
 
-/* New level UI */
-
 .cross-level-ui {
   position: absolute;
   left: 50%;
