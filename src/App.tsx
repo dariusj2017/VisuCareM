@@ -71,7 +71,7 @@ export default function App() {
 
   const [horizontalTolerance, setHorizontalTolerance] = useState(5);
   const [verticalTolerance, setVerticalTolerance] = useState(5);
-  const [horizontalRange, setHorizontalRange] = useState(15);
+  const [horizontalRange, setHorizontalRange] = useState(30);
   const [verticalRange, setVerticalRange] = useState(30);
 
   const [markerScale, setMarkerScale] = useState(1);
@@ -82,6 +82,9 @@ export default function App() {
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
+
+  // levelHorizontalDeg = kampas nuo vertikalės (0 kai idealiai vertikalu)
+  // levelVerticalDeg = šoninis pakrypimas
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
@@ -291,7 +294,16 @@ export default function App() {
 
   const requestLevelPermission = async () => {
     try {
-      if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
+      if (typeof window === "undefined") {
+        setLevelPermissionState("unsupported");
+        setLevelEnabled(false);
+        return;
+      }
+
+      const hasOrientation = "DeviceOrientationEvent" in window;
+      const hasMotion = "DeviceMotionEvent" in window;
+
+      if (!hasOrientation && !hasMotion) {
         setLevelPermissionState("unsupported");
         setLevelEnabled(false);
         return;
@@ -301,19 +313,28 @@ export default function App() {
         requestPermission?: () => Promise<"granted" | "denied">;
       };
 
-      if (typeof orientationCtor.requestPermission === "function") {
-        const result = await orientationCtor.requestPermission();
+      const motionCtor = window.DeviceMotionEvent as typeof DeviceMotionEvent & {
+        requestPermission?: () => Promise<"granted" | "denied">;
+      };
 
-        if (result === "granted") {
-          setLevelPermissionState("granted");
-          setLevelEnabled(true);
-        } else {
-          setLevelPermissionState("denied");
-          setLevelEnabled(false);
-        }
-      } else {
+      let granted = true;
+
+      if (typeof orientationCtor?.requestPermission === "function") {
+        const result = await orientationCtor.requestPermission();
+        granted = granted && result === "granted";
+      }
+
+      if (typeof motionCtor?.requestPermission === "function") {
+        const result = await motionCtor.requestPermission();
+        granted = granted && result === "granted";
+      }
+
+      if (granted) {
         setLevelPermissionState("granted");
         setLevelEnabled(true);
+      } else {
+        setLevelPermissionState("denied");
+        setLevelEnabled(false);
       }
     } catch (err) {
       console.error(err);
@@ -325,15 +346,26 @@ export default function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.22;
-    const deadbandDeg = 1.2;
+    const smoothing = 0.2;
+    const deadbandDeg = 1.0;
 
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      const beta = event.beta ?? 0;
-      const gamma = event.gamma ?? 0;
+    const handleMotion = (event: DeviceMotionEvent) => {
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
 
-      let horizontalDeg = beta - 90;
-      let verticalDeg = gamma;
+      const x = acc.x ?? 0;
+      const y = acc.y ?? 0;
+      const z = acc.z ?? 0;
+
+      const g = Math.sqrt(x * x + y * y + z * z) || 1;
+
+      // 0° kai įrenginys vertikalus
+      // didėja, kai įrenginys guldomas
+      let fromVerticalDeg =
+        Math.asin(clamp(Math.abs(z) / g, 0, 1)) * (180 / Math.PI);
+
+      // šoninis pakrypimas kairė/dešinė
+      let sideTiltDeg = Math.atan2(x, y || 0.0001) * (180 / Math.PI);
 
       const angle =
         typeof screen !== "undefined" &&
@@ -343,24 +375,23 @@ export default function App() {
           : 0;
 
       if (angle === 270 || angle === -90) {
-        horizontalDeg = -(beta - 90);
-        verticalDeg = -gamma;
+        sideTiltDeg = -sideTiltDeg;
       }
 
-      horizontalDeg = clamp(horizontalDeg, -horizontalRange, horizontalRange);
-      verticalDeg = clamp(verticalDeg, -verticalRange, verticalRange);
+      fromVerticalDeg = clamp(fromVerticalDeg, 0, horizontalRange);
+      sideTiltDeg = clamp(sideTiltDeg, -verticalRange, verticalRange);
 
-      if (Math.abs(horizontalDeg) <= deadbandDeg) horizontalDeg = 0;
-      if (Math.abs(verticalDeg) <= deadbandDeg) verticalDeg = 0;
+      if (Math.abs(fromVerticalDeg) <= deadbandDeg) fromVerticalDeg = 0;
+      if (Math.abs(sideTiltDeg) <= deadbandDeg) sideTiltDeg = 0;
 
-      setLevelHorizontalDeg((prev) => prev + (horizontalDeg - prev) * smoothing);
-      setLevelVerticalDeg((prev) => prev + (verticalDeg - prev) * smoothing);
+      setLevelHorizontalDeg((prev) => prev + (fromVerticalDeg - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (sideTiltDeg - prev) * smoothing);
     };
 
-    window.addEventListener("deviceorientation", handleOrientation, true);
+    window.addEventListener("devicemotion", handleMotion, true);
 
     return () => {
-      window.removeEventListener("deviceorientation", handleOrientation, true);
+      window.removeEventListener("devicemotion", handleMotion, true);
     };
   }, [levelEnabled, horizontalRange, verticalRange]);
 
@@ -422,16 +453,13 @@ export default function App() {
     }
   }
 
-  const horizontalDisplayDeg = clamp(
-    levelHorizontalDeg,
-    -horizontalRange,
-    horizontalRange
-  );
+  const horizontalDisplayDeg = clamp(levelHorizontalDeg, 0, horizontalRange);
   const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
+  // horizontal bubble juda nuo centro į dešinę, kai įrenginys guldomas
   const horizontalOffset = clamp(
     (horizontalDisplayDeg / horizontalRange) * 90,
-    -90,
+    0,
     90
   );
 
@@ -441,7 +469,7 @@ export default function App() {
     90
   );
 
-  const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
+  const horizontalOk = horizontalDisplayDeg <= horizontalTolerance;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
 
   return (
@@ -529,8 +557,8 @@ export default function App() {
             />
 
             <div className="cross-level-readout">
-              <div>Horizontal tilt: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical tilt: {verticalDisplayDeg.toFixed(1)}°</div>
+              <div>From vertical: {horizontalDisplayDeg.toFixed(1)}°</div>
+              <div>Side tilt: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -775,7 +803,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Horizontal tolerance</label>
+              <label className="settings-label">From vertical tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -790,7 +818,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical tolerance</label>
+              <label className="settings-label">Side tilt tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -805,7 +833,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Horizontal full scale</label>
+              <label className="settings-label">From vertical full scale</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -815,12 +843,12 @@ export default function App() {
                   value={horizontalRange}
                   onChange={(e) => setHorizontalRange(Number(e.target.value))}
                 />
-                <div className="tolerance-value">±{horizontalRange}°</div>
+                <div className="tolerance-value">0…{horizontalRange}°</div>
               </div>
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical full scale</label>
+              <label className="settings-label">Side tilt full scale</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -898,10 +926,10 @@ export default function App() {
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Horizontal tilt: {levelHorizontalDeg.toFixed(1)}°
+                From vertical: {levelHorizontalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                Vertical tilt: {levelVerticalDeg.toFixed(1)}°
+                Side tilt: {levelVerticalDeg.toFixed(1)}°
               </div>
             </div>
 
