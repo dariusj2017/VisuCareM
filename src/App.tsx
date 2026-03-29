@@ -81,7 +81,7 @@ export default function App() {
   const [levelPermissionState, setLevelPermissionState] = useState<
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
-  const [levelEnabled, setLevelEnabled] = useState(false);
+  const [levelEnabled, setLevelEnabled] = useState(true);
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
@@ -520,7 +520,7 @@ export default function App() {
 
             <div className="cross-level-readout">
               <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical: {verticalDisplayDeg.toFixed(1)}° (90±30)</div>
+              <div>Vertical: 90 ± {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
