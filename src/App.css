@@ -400,9 +400,8 @@ input {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
-.cross-level-bubble-horizontal,
 .cross-level-bubble-vertical {
-  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 255, 255, 0.95);
 }
 
 .cross-level-center-dot {

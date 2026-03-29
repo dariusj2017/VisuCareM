@@ -329,7 +329,7 @@ export default function App() {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      const nextHorizontal = clamp(beta, -horizontalRange, horizontalRange);
+      const nextHorizontal = clamp(beta - 90, -horizontalRange, horizontalRange);
       const nextVertical = clamp(gamma, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
