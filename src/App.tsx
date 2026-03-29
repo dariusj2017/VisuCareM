@@ -323,7 +323,8 @@ export default function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.06; // lėtesnis filtravimas mažina triukšmą ir reaguoja švelniau
+    const smoothing = 0.25; // didesnė inercija, mažiau svyruoja
+    const deadbandDeg = 1.5; // leidžiame +/-1.5° triukšmui
 
     // ------------- ORIENTACIJOS KONVERTAVIMAS Į GULŠČIUKĄ -------------
     // DeviceOrientationEvent:
@@ -333,7 +334,7 @@ export default function App() {
     //
     // Tvarkos:
     //   - horizontalus gulsčiukas (kryžiaus aukštyje): gamma
-    //   - vertikalus gulsčiukas (kryžiaus šonuose): beta - 90 (portreto režimui)
+    //   - vertikalus gulsčiukas (kryžiaus šonuose): beta (tarp 60 ir 120)
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
@@ -341,13 +342,14 @@ export default function App() {
 
       console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
 
-      // Horizontalus lygis: gamma ašis, statmenas ekranui.
-      // 0 = iPad lygus, +/-90 = pasisukimas horizontaliai.
-      const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
+      // Horizontalus gulsčiukas: gamma, bet su deadband, kad stalinis triukšmas nejudintų.
+      const steadyGamma = Math.abs(gamma) <= deadbandDeg ? 0 : gamma;
+      const nextHorizontal = clamp(steadyGamma, -horizontalRange, horizontalRange);
 
-      // Vertikalus gulsčiukas: 90±30 kampo zona (tarp beta=60 ir beta=120).
-      // 90 = tiesiai, 60 = perlenkimas į save, 120 = perlenkimas nuo savęs.
-      const nextVertical = clamp(beta, 60, 120);
+      // Vertikalus gulsčiukas: beta 60..120 intervale (90 = tiesiai), su deadband prie 90.
+      const rawVertical = clamp(beta, 60, 120);
+      const steadyVertical = Math.abs(rawVertical - 90) <= deadbandDeg ? 90 : rawVertical;
+      const nextVertical = steadyVertical;
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
