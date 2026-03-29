@@ -72,7 +72,7 @@ export default function App() {
   const [horizontalTolerance, setHorizontalTolerance] = useState(5);
   const [verticalTolerance, setVerticalTolerance] = useState(5);
   const [horizontalRange, setHorizontalRange] = useState(15);
-  const [verticalRange, setVerticalRange] = useState(1);
+  const [verticalRange, setVerticalRange] = useState(30);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
