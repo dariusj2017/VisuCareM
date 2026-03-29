@@ -342,13 +342,16 @@ export default function App() {
 
       console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
 
-      // Horizontalus gulsčiukas: gamma, bet su deadband, kad stalinis triukšmas nejudintų.
-      const steadyGamma = Math.abs(gamma) <= deadbandDeg ? 0 : gamma;
-      const nextHorizontal = clamp(steadyGamma, -horizontalRange, horizontalRange);
+      // Horizontalus gulsčiukas: beta pagal iPad priekinį/galinį pakėlimą.
+      // 90 = tiesiai, 60..120 -> +/-30 kampų zona.
+      const rawHorizontal = clamp(beta - 90, -horizontalRange, horizontalRange);
+      const steadyHorizontal = Math.abs(rawHorizontal) <= deadbandDeg ? 0 : rawHorizontal;
+      const nextHorizontal = steadyHorizontal;
 
-      // Vertikalus gulsčiukas: beta 60..120 intervale (90 = tiesiai), su deadband prie 90.
-      const rawVertical = clamp(beta, 60, 120);
-      const steadyVertical = Math.abs(rawVertical - 90) <= deadbandDeg ? 90 : rawVertical;
+      // Vertikalus gulsčiukas: gamma pagal iPad šoninį pakreipimą.
+      // ±30 laipsnių zona (kryžiaus judėjimui). 
+      const rawVertical = clamp(gamma, -verticalRange, verticalRange);
+      const steadyVertical = Math.abs(rawVertical) <= deadbandDeg ? 0 : rawVertical;
       const nextVertical = steadyVertical;
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
@@ -420,13 +423,13 @@ export default function App() {
     }
   }
 
-  // horizontalRange/verticalRange be keitimų, vertikalus rutuliukas 90 +/- 30 (beta 60..120)
+  // horizontalRange/verticalRange 30 => ±30 laipsnių skalė.
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
-  const verticalOffset = ((levelVerticalDeg - 90) / 30) * 90;
+  const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
 
-  // Rodyti vertikalią reikšmę kaip -30..+30 (kintantis nuo 90)
-  const verticalDisplayDeg = levelVerticalDeg - 90;
+  // Rodyti abu +- diapazonus.
   const horizontalDisplayDeg = levelHorizontalDeg;
+  const verticalDisplayDeg = levelVerticalDeg;
 
   const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
@@ -517,7 +520,7 @@ export default function App() {
 
             <div className="cross-level-readout">
               <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical: {verticalDisplayDeg.toFixed(1)}° (90±30)</div>
+              <div>Vertical: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
