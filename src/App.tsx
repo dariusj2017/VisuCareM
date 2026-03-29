@@ -345,9 +345,9 @@ export default function App() {
       // 0 = iPad lygus, +/-90 = pasisukimas horizontaliai.
       const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
 
-      // Vertikalus gulsčiukas: beta reiškmė 0..180,
-      // 90 - tiesiai, mažesnis - į save, didesnis - nuo savęs.
-      const nextVertical = clamp(beta, 0, 180);
+      // Vertikalus gulsčiukas: 90±30 kampo zona (tarp beta=60 ir beta=120).
+      // 90 = tiesiai, 60 = perlenkimas į save, 120 = perlenkimas nuo savęs.
+      const nextVertical = clamp(beta, 60, 120);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
@@ -418,16 +418,16 @@ export default function App() {
     }
   }
 
-  // horizontalRange/verticalRange be keitimų, bet vertikalus rutuliukas jau 0..180 kampų.
+  // horizontalRange/verticalRange be keitimų, vertikalus rutuliukas 90 +/- 30 (beta 60..120)
   const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
-  const verticalOffset = ((levelVerticalDeg - 90) / 90) * 90;
+  const verticalOffset = ((levelVerticalDeg - 90) / 30) * 90;
 
-  // Rodyti vertikalų kampą 0..180 (tiesiai=90)
-  const verticalDisplayDeg = levelVerticalDeg;
+  // Rodyti vertikalią reikšmę kaip -30..+30 (kintantis nuo 90)
+  const verticalDisplayDeg = levelVerticalDeg - 90;
   const horizontalDisplayDeg = levelHorizontalDeg;
 
   const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
-  const verticalOk = Math.abs(verticalDisplayDeg - 90) <= verticalTolerance;
+  const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
 
   return (
     <div className="app">
@@ -515,7 +515,7 @@ export default function App() {
 
             <div className="cross-level-readout">
               <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical: {verticalDisplayDeg.toFixed(1)}°</div>
+              <div>Vertical: {verticalDisplayDeg.toFixed(1)}° (90±30)</div>
             </div>
           </div>
         )}
