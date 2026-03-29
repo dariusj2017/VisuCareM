@@ -81,7 +81,7 @@ export default function App() {
   const [levelPermissionState, setLevelPermissionState] = useState<
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
-  const [levelEnabled, setLevelEnabled] = useState(true);
+  const [levelEnabled, setLevelEnabled] = useState(false);
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
@@ -291,17 +291,19 @@ export default function App() {
 
   const requestLevelPermission = async () => {
     try {
-      const maybeIOS = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
-        requestPermission?: () => Promise<"granted" | "denied">;
-      };
-
       if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
         setLevelPermissionState("unsupported");
+        setLevelEnabled(false);
         return;
       }
 
-      if (typeof maybeIOS.requestPermission === "function") {
-        const result = await maybeIOS.requestPermission();
+      const orientationCtor = window.DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+        requestPermission?: () => Promise<"granted" | "denied">;
+      };
+
+      if (typeof orientationCtor.requestPermission === "function") {
+        const result = await orientationCtor.requestPermission();
+
         if (result === "granted") {
           setLevelPermissionState("granted");
           setLevelEnabled(true);
@@ -323,39 +325,36 @@ export default function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.25; // didesnė inercija, mažiau svyruoja
-    const deadbandDeg = 1.5; // leidžiame +/-1.5° triukšmui
+    const smoothing = 0.22;
+    const deadbandDeg = 1.2;
 
-    // ------------- ORIENTACIJOS KONVERTAVIMAS Į GULŠČIUKĄ -------------
-    // DeviceOrientationEvent:
-    //   alpha = pasisukimas aplink ekrano normalę (kompasinis pasisukimas)
-    //   beta = pasisukimas aplink įrenginio kairė/dešinė ašį (priekinis/galinis pakrypimas)
-    //   gamma = pasisukimas aplink įrenginio viršus/apačią ašį (šoninis pakrypimas)
-    //
-    // Tvarkos:
-    //   - horizontalus gulsčiukas (kryžiaus aukštyje): gamma
-    //   - vertikalus gulsčiukas (kryžiaus šonuose): beta (tarp 60 ir 120)
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
-      const alpha = event.alpha ?? 0;
 
-      console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
+      let horizontalDeg = beta - 90;
+      let verticalDeg = gamma;
 
-      // Horizontalus gulsčiukas: beta pagal iPad priekinį/galinį pakėlimą.
-      // 90 = tiesiai, 60..120 -> +/-30 kampų zona.
-      const rawHorizontal = clamp(beta - 90, -horizontalRange, horizontalRange);
-      const steadyHorizontal = Math.abs(rawHorizontal) <= deadbandDeg ? 0 : rawHorizontal;
-      const nextHorizontal = steadyHorizontal;
+      const angle =
+        typeof screen !== "undefined" &&
+        screen.orientation &&
+        typeof screen.orientation.angle === "number"
+          ? screen.orientation.angle
+          : 0;
 
-      // Vertikalus gulsčiukas: gamma pagal iPad šoninį pakreipimą.
-      // ±30 laipsnių zona (kryžiaus judėjimui). 
-      const rawVertical = clamp(gamma, -verticalRange, verticalRange);
-      const steadyVertical = Math.abs(rawVertical) <= deadbandDeg ? 0 : rawVertical;
-      const nextVertical = steadyVertical;
+      if (angle === 270 || angle === -90) {
+        horizontalDeg = -(beta - 90);
+        verticalDeg = -gamma;
+      }
 
-      setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
-      setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
+      horizontalDeg = clamp(horizontalDeg, -horizontalRange, horizontalRange);
+      verticalDeg = clamp(verticalDeg, -verticalRange, verticalRange);
+
+      if (Math.abs(horizontalDeg) <= deadbandDeg) horizontalDeg = 0;
+      if (Math.abs(verticalDeg) <= deadbandDeg) verticalDeg = 0;
+
+      setLevelHorizontalDeg((prev) => prev + (horizontalDeg - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (verticalDeg - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -423,13 +422,24 @@ export default function App() {
     }
   }
 
-  // horizontalRange/verticalRange 30 => ±30 laipsnių skalė.
-  const horizontalOffset = (levelHorizontalDeg / horizontalRange) * 90;
-  const verticalOffset = (levelVerticalDeg / verticalRange) * 90;
+  const horizontalDisplayDeg = clamp(
+    levelHorizontalDeg,
+    -horizontalRange,
+    horizontalRange
+  );
+  const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
-  // Rodyti abu +- diapazonus.
-  const horizontalDisplayDeg = levelHorizontalDeg;
-  const verticalDisplayDeg = levelVerticalDeg;
+  const horizontalOffset = clamp(
+    (horizontalDisplayDeg / horizontalRange) * 90,
+    -90,
+    90
+  );
+
+  const verticalOffset = clamp(
+    (verticalDisplayDeg / verticalRange) * 90,
+    -90,
+    90
+  );
 
   const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
@@ -519,8 +529,8 @@ export default function App() {
             />
 
             <div className="cross-level-readout">
-              <div>Horizontal: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>Vertical: 90 ± {verticalDisplayDeg.toFixed(1)}°</div>
+              <div>Horizontal tilt: {horizontalDisplayDeg.toFixed(1)}°</div>
+              <div>Vertical tilt: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -800,7 +810,7 @@ export default function App() {
                 <input
                   type="range"
                   min="5"
-                  max="20"
+                  max="30"
                   step="1"
                   value={horizontalRange}
                   onChange={(e) => setHorizontalRange(Number(e.target.value))}
@@ -815,7 +825,7 @@ export default function App() {
                 <input
                   type="range"
                   min="5"
-                  max="20"
+                  max="30"
                   step="1"
                   value={verticalRange}
                   onChange={(e) => setVerticalRange(Number(e.target.value))}
@@ -888,10 +898,10 @@ export default function App() {
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Horizontal: {levelHorizontalDeg.toFixed(1)}°
+                Horizontal tilt: {levelHorizontalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                Vertical: {levelVerticalDeg.toFixed(1)}°
+                Vertical tilt: {levelVerticalDeg.toFixed(1)}°
               </div>
             </div>
 
