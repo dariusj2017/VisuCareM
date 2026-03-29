@@ -330,8 +330,8 @@ export default function App() {
       const gamma = event.gamma ?? 0;      const alpha = event.alpha ?? 0;
 
       console.log(`Alpha: ${alpha.toFixed(1)}°, Beta: ${beta.toFixed(1)}°, Gamma: ${gamma.toFixed(1)}°`);
-      const nextHorizontal = clamp(gamma, -horizontalRange, horizontalRange);
-      const nextVertical = clamp(beta - 90, -verticalRange, verticalRange);
+      const nextHorizontal = clamp(beta - 90, -horizontalRange, horizontalRange);
+      const nextVertical = clamp(gamma, -verticalRange, verticalRange);
 
       setLevelHorizontalDeg((prev) => prev + (nextHorizontal - prev) * smoothing);
       setLevelVerticalDeg((prev) => prev + (nextVertical - prev) * smoothing);
