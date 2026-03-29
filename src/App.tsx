@@ -505,7 +505,7 @@ export default function App() {
             <div
               className="cross-level-bubble cross-level-bubble-horizontal"
               style={{
-                transform: `translate(calc(-50% + ${horizontalOffset}px), -50%)`,
+                transform: `translate(${horizontalOffset}px, 0)`,
                 background: horizontalOk ? "#19c15a" : "#d61f1f",
               }}
             />
@@ -513,7 +513,7 @@ export default function App() {
             <div
               className="cross-level-bubble cross-level-bubble-vertical"
               style={{
-                transform: `translate(-50%, calc(-50% + ${verticalOffset}px))`,
+                transform: `translate(0, ${verticalOffset}px)`,
                 background: verticalOk ? "#19c15a" : "#d61f1f",
               }}
             />
