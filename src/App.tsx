@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
 import marker9top from "./assets/markers/marker9top.svg";
@@ -88,7 +88,6 @@ export default function App() {
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
-
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
@@ -106,11 +105,6 @@ export default function App() {
     key: MarkerKey;
     target: "front" | "side";
   } | null>(null);
-
-  const allMarkerDefs = useMemo(
-    () => [...frontMarkerDefs, ...sideMarkerDefs],
-    []
-  );
 
   const startCamera = async () => {
     try {
@@ -218,7 +212,7 @@ export default function App() {
           try {
             await orientationApi.lock("landscape");
           } catch {
-            // ignored
+            // Safari may ignore this
           }
         }
       }
@@ -291,15 +285,6 @@ export default function App() {
     }
   };
 
-  const retakeStep = () => {
-    if (step === "sideCapture") {
-      setSideImage(null);
-    }
-    if (step === "frontCapture") {
-      setFrontImage(null);
-    }
-  };
-
   const backToFrontCapture = () => {
     setSideImage(null);
     setStep("frontCapture");
@@ -350,7 +335,6 @@ export default function App() {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      // jei reikės sukeisti ar invertuoti, keisti tik čia
       const nextHorizontal = clamp(beta, -horizontalRange, horizontalRange);
       const nextVertical = clamp(gamma, -verticalRange, verticalRange);
 
@@ -549,7 +533,7 @@ export default function App() {
                 aria-label="Take front photo"
                 type="button"
                 onClick={captureCurrentStep}
-              ></button>
+              />
 
               {!isCameraOn && !error && (
                 <div className="camera-status">Jungiama kamera...</div>
@@ -579,7 +563,7 @@ export default function App() {
                 aria-label="Take side photo"
                 type="button"
                 onClick={captureCurrentStep}
-              ></button>
+              />
 
               <button
                 className="side-back-btn"
@@ -708,7 +692,9 @@ export default function App() {
               </button>
 
               <div className="calibration-scale-box">
-                {frontScale ? `Front scale: ${frontScale.toFixed(3)} mm/px` : "Front scale: n/a"}
+                {frontScale
+                  ? `Front scale: ${frontScale.toFixed(3)} mm/px`
+                  : "Front scale: n/a"}
               </div>
             </div>
           </div>
