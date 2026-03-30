@@ -71,7 +71,11 @@ export default function App() {
 
   const [horizontalTolerance, setHorizontalTolerance] = useState(5);
   const [verticalTolerance, setVerticalTolerance] = useState(5);
+
+  // Čia tavo norimas H diapazonas: 90 ± 15°
   const [horizontalRange, setHorizontalRange] = useState(15);
+
+  // V gulsčiukui paliekam ±30°
   const [verticalRange, setVerticalRange] = useState(30);
 
   const [markerScale, setMarkerScale] = useState(1);
@@ -83,7 +87,7 @@ export default function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  // H = pirmyn / atgal nuokrypis nuo idealios vertikalės
+  // H = pirmyn / atgal nuokrypis nuo vertikalės
   // idealu: beta = 90 => H = 0
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
 
@@ -212,7 +216,7 @@ export default function App() {
           try {
             await orientationApi.lock("landscape");
           } catch {
-            // Safari may ignore this
+            // Safari gali ignoruoti
           }
         }
       }
@@ -338,10 +342,11 @@ export default function App() {
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      // H: pirmyn / atgal nuo vertikalės
+      // H matavimas perkeltas į vertikalią padėtį:
+      // idealu kai beta ≈ 90
       let forwardBackDeg = beta - 90;
 
-      // V: šoninis pakrypimas
+      // V lieka šoninis pakrypimas
       let sideTiltDeg = gamma;
 
       const angle =
@@ -441,6 +446,7 @@ export default function App() {
     verticalRange
   );
 
+  // Absoliutus kampas apie 90°
   const verticalHoldAngle = 90 + horizontalDisplayDeg;
 
   const horizontalOffset = clamp(
@@ -792,7 +798,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">H tolerance</label>
+              <label className="settings-label">Vertical 90° tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -807,7 +813,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">V tolerance</label>
+              <label className="settings-label">Side tilt tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -822,7 +828,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">H full scale</label>
+              <label className="settings-label">Vertical full scale around 90°</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -832,12 +838,12 @@ export default function App() {
                   value={horizontalRange}
                   onChange={(e) => setHorizontalRange(Number(e.target.value))}
                 />
-                <div className="tolerance-value">±{horizontalRange}°</div>
+                <div className="tolerance-value">90 ± {horizontalRange}°</div>
               </div>
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">V full scale</label>
+              <label className="settings-label">Side tilt full scale</label>
               <div className="tolerance-row">
                 <input
                   type="range"
