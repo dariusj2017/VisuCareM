@@ -398,6 +398,11 @@ input {
   border-radius: 50%;
   border: 3px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  will-change: transform;
+}
+
+.cross-level-bubble-horizontal {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .cross-level-bubble-vertical {
@@ -422,18 +427,6 @@ input {
 .cross-level-readout {
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-
-.cross-level-readout {
-  position: absolute;
-  left: 50%;
   top: calc(100% + 12px);
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.62);
@@ -442,7 +435,8 @@ input {
   border-radius: 10px;
   font-size: 13px;
   text-align: center;
-  min-width: 90px;
+  min-width: 120px;
+  line-height: 1.35;
 }
 
 /* Calibration */
