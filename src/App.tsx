@@ -69,13 +69,13 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const [horizontalTolerance, setHorizontalTolerance] = useState(5);
+  // H gulsčiukas dabar laikinai nenaudojamas, todėl paliekam kaip konstantas
+  // kad būtų aišku, kas išjungta, ir nebūtų TS klaidų.
+  const horizontalTolerance = 5;
+  const horizontalRange = 15;
+
+  // Naudojamas tik vertikalus gulsčiukas
   const [verticalTolerance, setVerticalTolerance] = useState(5);
-
-  // H dabar testui nejuda
-  const [horizontalRange, setHorizontalRange] = useState(15);
-
-  // Vertikalaus rutuliuko darbinis diapazonas
   const [verticalRange, setVerticalRange] = useState(15);
 
   const [markerScale, setMarkerScale] = useState(1);
@@ -87,8 +87,8 @@ export default function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  // H paliekam centre
-  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
+  // H dabar nenaudojamas, paliekam 0 testavimo režimui
+  const levelHorizontalDeg = 0;
 
   // V = pirmyn/atgal nuo idealios vertikalės
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
@@ -350,10 +350,6 @@ export default function App() {
         verticalBubbleDeg = 0;
       }
 
-      // H paliekam centre
-      setLevelHorizontalDeg(0);
-
-      // Minusas čia daro:
       // nuo savęs -> aukštyn
       // į save -> žemyn
       setLevelVerticalDeg((prev) => prev + ((-verticalBubbleDeg) - prev) * smoothing);
@@ -424,7 +420,9 @@ export default function App() {
     }
   }
 
-  const horizontalDisplayDeg = 0;
+  // H dabar nenaudojamas
+  const horizontalDisplayDeg = levelHorizontalDeg;
+
   const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
   const horizontalOffset = 0;
@@ -435,7 +433,7 @@ export default function App() {
     90
   );
 
-  const horizontalOk = true;
+  const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
 
   return (
@@ -770,6 +768,23 @@ export default function App() {
               </div>
             </div>
 
+            {/* H dalis laikinai išjungta
+            <div className="settings-group">
+              <label className="settings-label">H tolerance</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={horizontalTolerance}
+                  onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalTolerance}°</div>
+              </div>
+            </div>
+            */}
+
             <div className="settings-group">
               <label className="settings-label">Vertical bubble tolerance</label>
               <div className="tolerance-row">
@@ -784,6 +799,23 @@ export default function App() {
                 <div className="tolerance-value">{verticalTolerance}°</div>
               </div>
             </div>
+
+            {/* H diapazonas laikinai išjungtas
+            <div className="settings-group">
+              <label className="settings-label">H full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="5"
+                  max="30"
+                  step="1"
+                  value={horizontalRange}
+                  onChange={(e) => setHorizontalRange(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{horizontalRange}°</div>
+              </div>
+            </div>
+            */}
 
             <div className="settings-group">
               <label className="settings-label">Vertical bubble full scale</label>
@@ -862,9 +894,6 @@ export default function App() {
 
               <div className="settings-summary">
                 Permission: {levelPermissionState}
-              </div>
-              <div className="settings-summary">
-                Vertical bubble raw: {levelVerticalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
                 Forward/back: {(-levelVerticalDeg).toFixed(1)}°
