@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
-import marker9top from "./assets/markers/marker9top.svg";
-import marker6bottom from "./assets/markers/marker6bottom.svg";
-import marker6center from "./assets/markers/marker6center.svg";
+//import marker9top from "./assets/markers/marker9top.svg";
+//import marker6bottom from "./assets/markers/marker6bottom.svg";
+//import marker6center from "./assets/markers/marker6center.svg";
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
