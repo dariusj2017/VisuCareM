@@ -89,8 +89,9 @@ export default function App() {
   const [alphaDeg, setAlphaDeg] = useState(0);
   const [betaDeg, setBetaDeg] = useState(0);
   const [gammaDeg, setGammaDeg] = useState(0);
+
   const [verticalAngleSource, setVerticalAngleSource] = useState<"alpha" | "beta" | "gamma">("gamma");
-  const [invertVerticalAngle, setInvertVerticalAngle] = useState(true);
+  const [invertVerticalAngle, setInvertVerticalAngle] = useState(false);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [sideImage, setSideImage] = useState<string | null>(null);
@@ -362,7 +363,12 @@ export default function App() {
       } else if (verticalAngleSource === "beta") {
         selected = beta - 90;
       } else {
-        selected = gamma;
+        // tavo atvejis:
+        // gamma ≈ 90 vertikaliai
+        // į save: 89,88,87...
+        // nuo savęs: -89,-88,-87...
+        // todėl centruojam apie 90
+        selected = gamma - 90;
       }
 
       const finalValue = invertVerticalAngle ? -selected : selected;
