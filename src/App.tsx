@@ -1,14 +1,9 @@
-// ... VISAS IMPORT PALIEKAM KAIP YRA
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import logoImage from "./img/regos-prieziuros-logotipas.png";
 import marker9top from "./assets/markers/marker9top.svg";
 import marker6bottom from "./assets/markers/marker6bottom.svg";
 import marker6center from "./assets/markers/marker6center.svg";
-
-// ... VISI TYPE PALIEKAMI (nekeičiami)
-
-// ... VISI marker defs PALIEKAMI
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -18,26 +13,22 @@ export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [step, setStep] = useState("frontCapture");
+  const [step, setStep] = useState<"frontCapture" | "sideCapture" | "calibration">("frontCapture");
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
 
   const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">("user");
 
-  const [rotation, setRotation] = useState(0);
+  // 🔧 FIX TS – paliekam tik naudojamus
   const [flipHorizontal, setFlipHorizontal] = useState(true);
-  const [flipVertical, setFlipVertical] = useState(false);
 
-  const [showSettings, setShowSettings] = useState(false);
-
-  // 🔧 V gulsčiukas
-  const [verticalTolerance, setVerticalTolerance] = useState(5);
-  const [verticalRange, setVerticalRange] = useState(15);
+  // 🔧 Gulsčiukas
+  const [verticalTolerance] = useState(5);
+  const [verticalRange] = useState(15);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
+  const [levelEnabled] = useState(true);
 
-  const [levelEnabled, setLevelEnabled] = useState(true);
-
-  // 🆕 ORIENTATION CONTROL
+  // 🆕 Landscape kontrolė
   const [isLandscape, setIsLandscape] = useState(true);
 
   useEffect(() => {
@@ -49,18 +40,20 @@ export default function App() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // CAMERA
+  // 🎥 Kamera
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: cameraFacingMode },
         audio: false,
       });
+
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
+
       setIsCameraOn(true);
     } catch {
-      setError("Camera error");
+      setError("Nepavyko įjungti kameros");
     }
   };
 
@@ -71,7 +64,7 @@ export default function App() {
     };
   }, [cameraFacingMode]);
 
-  // 🔥 GULSČIUKAS FIX
+  // 🔥 GULSČIUKAS – TEISINGAS FIX
   useEffect(() => {
     if (!levelEnabled) return;
 
@@ -86,10 +79,8 @@ export default function App() {
       let v = 0;
 
       if (angle === 0 || angle === 180) {
-        // portrait
         v = beta - 90;
       } else {
-        // landscape
         v = gamma;
         if (angle === 270 || angle === -90) v = -v;
       }
@@ -108,6 +99,7 @@ export default function App() {
 
   const capture = () => {
     if (!isLandscape) return;
+
     if (step === "frontCapture") setStep("sideCapture");
     else setStep("calibration");
   };
@@ -122,29 +114,43 @@ export default function App() {
         <div className="title">{step}</div>
 
         <div className="topbar-actions">
-          <button className="icon-btn" onClick={() => setFlipHorizontal((p) => !p)}>
+          <button
+            className="icon-btn"
+            onClick={() => setFlipHorizontal((p) => !p)}
+          >
             Flip H
+          </button>
+
+          <button
+            className="icon-btn"
+            onClick={() =>
+              setCameraFacingMode((p) => (p === "user" ? "environment" : "user"))
+            }
+          >
+            ⇄
           </button>
         </div>
       </header>
 
       <main className="viewer">
-
-        {/* 🆕 PORTRAIT BLOCK */}
+        {/* 🆕 BLOKAS jei portrait */}
         {!isLandscape && (
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.8)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 999
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.85)",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 999,
+              textAlign: "center",
+            }}
+          >
             <div>
               <div style={{ fontSize: 28 }}>🔄 Pasukite iPad</div>
-              <div>Naudokite LANDSCAPE</div>
+              <div>Naudokite LANDSCAPE režimą</div>
             </div>
           </div>
         )}
@@ -155,6 +161,9 @@ export default function App() {
           autoPlay
           playsInline
           muted
+          style={{
+            transform: `scaleX(${flipHorizontal ? -1 : 1})`,
+          }}
         />
 
         {/* GULSČIUKAS */}
@@ -176,7 +185,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* CAPTURE */}
+        {/* FOTO MYGTUKAS */}
         {isLandscape && (
           <button
             className="capture-btn"
@@ -184,6 +193,11 @@ export default function App() {
           />
         )}
 
+        {!isCameraOn && !error && (
+          <div className="camera-status">Jungiama kamera...</div>
+        )}
+
+        {error && <div className="camera-status error">{error}</div>}
       </main>
     </div>
   );
