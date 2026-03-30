@@ -71,7 +71,7 @@ export default function App() {
 
   // H testui išjungtas
   const horizontalTolerance = 5;
-  const horizontalRange = 15;
+  //const horizontalRange = 15;
 
   // V gulsčiukui
   const [verticalTolerance, setVerticalTolerance] = useState(5);
