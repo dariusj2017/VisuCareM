@@ -72,11 +72,11 @@ export default function App() {
   const [horizontalTolerance, setHorizontalTolerance] = useState(5);
   const [verticalTolerance, setVerticalTolerance] = useState(5);
 
-  // Čia tavo norimas H diapazonas: 90 ± 15°
+  // H dabar testui nejuda
   const [horizontalRange, setHorizontalRange] = useState(15);
 
-  // V gulsčiukui paliekam ±30°
-  const [verticalRange, setVerticalRange] = useState(30);
+  // Vertikalaus rutuliuko darbinis diapazonas
+  const [verticalRange, setVerticalRange] = useState(15);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -87,12 +87,10 @@ export default function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  // H = pirmyn / atgal nuokrypis nuo vertikalės
-  // idealu: beta = 90 => H = 0
+  // H paliekam centre
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
 
-  // V = šoninis pakrypimas
-  // idealu: gamma = 0 => V = 0
+  // V = pirmyn/atgal nuo idealios vertikalės
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
@@ -216,7 +214,7 @@ export default function App() {
           try {
             await orientationApi.lock("landscape");
           } catch {
-            // Safari gali ignoruoti
+            // Safari may ignore this
           }
         }
       }
@@ -340,34 +338,25 @@ export default function App() {
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const beta = event.beta ?? 0;
-      const gamma = event.gamma ?? 0;
 
-      // H matavimas perkeltas į vertikalią padėtį:
-      // idealu kai beta ≈ 90
-      let forwardBackDeg = beta - 90;
+      // Idealus vertikalus laikymas: beta ≈ 90
+      // beta < 90  -> palenkta nuo savęs
+      // beta > 90  -> palenkta į save
+      let verticalBubbleDeg = beta - 90;
 
-      // V lieka šoninis pakrypimas
-      let sideTiltDeg = gamma;
+      verticalBubbleDeg = clamp(verticalBubbleDeg, -verticalRange, verticalRange);
 
-      const angle =
-        typeof screen !== "undefined" &&
-        screen.orientation &&
-        typeof screen.orientation.angle === "number"
-          ? screen.orientation.angle
-          : 0;
-
-      if (angle === 270 || angle === -90) {
-        sideTiltDeg = -sideTiltDeg;
+      if (Math.abs(verticalBubbleDeg) <= deadbandDeg) {
+        verticalBubbleDeg = 0;
       }
 
-      forwardBackDeg = clamp(forwardBackDeg, -horizontalRange, horizontalRange);
-      sideTiltDeg = clamp(sideTiltDeg, -verticalRange, verticalRange);
+      // H paliekam centre
+      setLevelHorizontalDeg(0);
 
-      if (Math.abs(forwardBackDeg) <= deadbandDeg) forwardBackDeg = 0;
-      if (Math.abs(sideTiltDeg) <= deadbandDeg) sideTiltDeg = 0;
-
-      setLevelHorizontalDeg((prev) => prev + (forwardBackDeg - prev) * smoothing);
-      setLevelVerticalDeg((prev) => prev + (sideTiltDeg - prev) * smoothing);
+      // Minusas čia daro:
+      // nuo savęs -> aukštyn
+      // į save -> žemyn
+      setLevelVerticalDeg((prev) => prev + ((-verticalBubbleDeg) - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -375,7 +364,7 @@ export default function App() {
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
-  }, [levelEnabled, horizontalRange, verticalRange]);
+  }, [levelEnabled, verticalRange]);
 
   const getRelativeCoordinates = (
     clientX: number,
@@ -435,25 +424,10 @@ export default function App() {
     }
   }
 
-  const horizontalDisplayDeg = clamp(
-    levelHorizontalDeg,
-    -horizontalRange,
-    horizontalRange
-  );
-  const verticalDisplayDeg = clamp(
-    levelVerticalDeg,
-    -verticalRange,
-    verticalRange
-  );
+  const horizontalDisplayDeg = 0;
+  const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
-  // Absoliutus kampas apie 90°
-  const verticalHoldAngle = 90 + horizontalDisplayDeg;
-
-  const horizontalOffset = clamp(
-    (horizontalDisplayDeg / horizontalRange) * 90,
-    -90,
-    90
-  );
+  const horizontalOffset = 0;
 
   const verticalOffset = clamp(
     (verticalDisplayDeg / verticalRange) * 90,
@@ -461,7 +435,7 @@ export default function App() {
     90
   );
 
-  const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
+  const horizontalOk = true;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
 
   return (
@@ -551,9 +525,8 @@ export default function App() {
             <div className="cross-level-center-dot" />
 
             <div className="cross-level-readout">
-              <div>Vertical hold: {verticalHoldAngle.toFixed(1)}°</div>
-              <div>H tilt: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div>V tilt: {verticalDisplayDeg.toFixed(1)}°</div>
+              <div>Vertical bubble test</div>
+              <div>Forward/back: {(-verticalDisplayDeg).toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -798,22 +771,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical 90° tolerance</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value={horizontalTolerance}
-                  onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
-                />
-                <div className="tolerance-value">{horizontalTolerance}°</div>
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Side tilt tolerance</label>
+              <label className="settings-label">Vertical bubble tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -828,22 +786,7 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical full scale around 90°</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="5"
-                  max="30"
-                  step="1"
-                  value={horizontalRange}
-                  onChange={(e) => setHorizontalRange(Number(e.target.value))}
-                />
-                <div className="tolerance-value">90 ± {horizontalRange}°</div>
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Side tilt full scale</label>
+              <label className="settings-label">Vertical bubble full scale</label>
               <div className="tolerance-row">
                 <input
                   type="range"
@@ -921,13 +864,10 @@ export default function App() {
                 Permission: {levelPermissionState}
               </div>
               <div className="settings-summary">
-                Vertical hold: {verticalHoldAngle.toFixed(1)}°
+                Vertical bubble raw: {levelVerticalDeg.toFixed(1)}°
               </div>
               <div className="settings-summary">
-                H tilt: {levelHorizontalDeg.toFixed(1)}°
-              </div>
-              <div className="settings-summary">
-                V tilt: {levelVerticalDeg.toFixed(1)}°
+                Forward/back: {(-levelVerticalDeg).toFixed(1)}°
               </div>
             </div>
 
