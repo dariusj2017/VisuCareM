@@ -86,6 +86,12 @@ export default function App() {
   const horizontalDisplayDeg = 0;
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
+  const [alphaDeg, setAlphaDeg] = useState(0);
+  const [betaDeg, setBetaDeg] = useState(0);
+  const [gammaDeg, setGammaDeg] = useState(0);
+  const [verticalAngleSource, setVerticalAngleSource] = useState<"alpha" | "beta" | "gamma">("gamma");
+  const [invertVerticalAngle, setInvertVerticalAngle] = useState(true);
+
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [sideImage, setSideImage] = useState<string | null>(null);
 
@@ -341,34 +347,29 @@ export default function App() {
     const deadbandDeg = 1.0;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
+      const alpha = event.alpha ?? 0;
       const beta = event.beta ?? 0;
       const gamma = event.gamma ?? 0;
 
-      const angle =
-        typeof screen !== "undefined" &&
-        screen.orientation &&
-        typeof screen.orientation.angle === "number"
-          ? screen.orientation.angle
-          : 0;
+      setAlphaDeg(alpha);
+      setBetaDeg(beta);
+      setGammaDeg(gamma);
 
-      let verticalBubbleDeg = 0;
+      let selected = 0;
 
-      if (angle === 0 || angle === 180) {
-        verticalBubbleDeg = beta - 90;
+      if (verticalAngleSource === "alpha") {
+        selected = alpha;
+      } else if (verticalAngleSource === "beta") {
+        selected = beta - 90;
       } else {
-        verticalBubbleDeg = gamma;
-        if (angle === 270 || angle === -90) {
-          verticalBubbleDeg = -verticalBubbleDeg;
-        }
+        selected = gamma;
       }
 
-      verticalBubbleDeg = clamp(verticalBubbleDeg, -verticalRange, verticalRange);
+      const finalValue = invertVerticalAngle ? -selected : selected;
+      const verticalBubbleDeg = clamp(finalValue, -verticalRange, verticalRange);
+      const snapped = Math.abs(verticalBubbleDeg) <= deadbandDeg ? 0 : verticalBubbleDeg;
 
-      if (Math.abs(verticalBubbleDeg) <= deadbandDeg) {
-        verticalBubbleDeg = 0;
-      }
-
-      setLevelVerticalDeg((prev) => prev + ((-verticalBubbleDeg) - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (snapped - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -376,7 +377,7 @@ export default function App() {
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
-  }, [levelEnabled, verticalRange]);
+  }, [levelEnabled, verticalRange, verticalAngleSource, invertVerticalAngle]);
 
   const getRelativeCoordinates = (
     clientX: number,
@@ -559,8 +560,8 @@ export default function App() {
             <div className="cross-level-center-dot" />
 
             <div className="cross-level-readout">
-              <div>Forward/back</div>
-              <div>{(-verticalDisplayDeg).toFixed(1)}°</div>
+              <div>Source: {verticalAngleSource}</div>
+              <div>{verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -901,9 +902,60 @@ export default function App() {
               <div className="settings-summary">
                 Permission: {levelPermissionState}
               </div>
-              <div className="settings-summary">
-                Forward/back: {(-levelVerticalDeg).toFixed(1)}°
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Raw device angles</label>
+              <div className="settings-summary">alpha: {alphaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">beta: {betaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">gamma: {gammaDeg.toFixed(1)}°</div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Vertical bubble source</label>
+
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "alpha" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("alpha")}
+                >
+                  alpha
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "beta" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("beta")}
+                >
+                  beta
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "gamma" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("gamma")}
+                >
+                  gamma
+                </button>
               </div>
+
+              <div className="settings-summary">Selected: {verticalAngleSource}</div>
+
+              <div className="toggle-row" style={{ marginTop: "8px" }}>
+                <button
+                  type="button"
+                  className={`settings-btn ${invertVerticalAngle ? "settings-btn-active" : ""}`}
+                  onClick={() => setInvertVerticalAngle((prev) => !prev)}
+                >
+                  {invertVerticalAngle ? "Invert ON" : "Invert OFF"}
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Current vertical bubble</label>
+              <div className="settings-summary">{verticalDisplayDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
