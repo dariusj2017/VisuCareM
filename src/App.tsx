@@ -69,12 +69,11 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // H gulsčiukas dabar laikinai nenaudojamas, todėl paliekam kaip konstantas
-  // kad būtų aišku, kas išjungta, ir nebūtų TS klaidų.
+  // H testui išjungtas
   const horizontalTolerance = 5;
   const horizontalRange = 15;
 
-  // Naudojamas tik vertikalus gulsčiukas
+  // V gulsčiukui
   const [verticalTolerance, setVerticalTolerance] = useState(5);
   const [verticalRange, setVerticalRange] = useState(15);
 
@@ -87,10 +86,10 @@ export default function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  // H dabar nenaudojamas, paliekam 0 testavimo režimui
+  // H paliekam centre
   const levelHorizontalDeg = 0;
 
-  // V = pirmyn/atgal nuo idealios vertikalės
+  // V = pirmyn/atgal palenkimas landscape režime
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
@@ -337,12 +336,22 @@ export default function App() {
     const deadbandDeg = 1.0;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
-      const beta = event.beta ?? 0;
+      const gamma = event.gamma ?? 0;
 
-      // Idealus vertikalus laikymas: beta ≈ 90
-      // beta < 90  -> palenkta nuo savęs
-      // beta > 90  -> palenkta į save
-      let verticalBubbleDeg = beta - 90;
+      // Landscape režime pirmyn/atgal palenkimas dažnai atsiranda gamma kanale.
+      let verticalBubbleDeg = gamma;
+
+      const angle =
+        typeof screen !== "undefined" &&
+        screen.orientation &&
+        typeof screen.orientation.angle === "number"
+          ? screen.orientation.angle
+          : 0;
+
+      // Jei landscape apverstas, invertuojam kryptį
+      if (angle === 270 || angle === -90) {
+        verticalBubbleDeg = -verticalBubbleDeg;
+      }
 
       verticalBubbleDeg = clamp(verticalBubbleDeg, -verticalRange, verticalRange);
 
@@ -420,9 +429,7 @@ export default function App() {
     }
   }
 
-  // H dabar nenaudojamas
   const horizontalDisplayDeg = levelHorizontalDeg;
-
   const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
   const horizontalOffset = 0;
@@ -768,23 +775,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* H dalis laikinai išjungta
-            <div className="settings-group">
-              <label className="settings-label">H tolerance</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value={horizontalTolerance}
-                  onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
-                />
-                <div className="tolerance-value">{horizontalTolerance}°</div>
-              </div>
-            </div>
-            */}
-
             <div className="settings-group">
               <label className="settings-label">Vertical bubble tolerance</label>
               <div className="tolerance-row">
@@ -799,23 +789,6 @@ export default function App() {
                 <div className="tolerance-value">{verticalTolerance}°</div>
               </div>
             </div>
-
-            {/* H diapazonas laikinai išjungtas
-            <div className="settings-group">
-              <label className="settings-label">H full scale</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="5"
-                  max="30"
-                  step="1"
-                  value={horizontalRange}
-                  onChange={(e) => setHorizontalRange(Number(e.target.value))}
-                />
-                <div className="tolerance-value">±{horizontalRange}°</div>
-              </div>
-            </div>
-            */}
 
             <div className="settings-group">
               <label className="settings-label">Vertical bubble full scale</label>
