@@ -363,12 +363,20 @@ export default function App() {
       } else if (verticalAngleSource === "beta") {
         selected = beta - 90;
       } else {
-        // tavo atvejis:
-        // gamma ≈ 90 vertikaliai
+        // gamma vertikaliai ≈ +90
         // į save: 89,88,87...
         // nuo savęs: -89,-88,-87...
-        // todėl centruojam apie 90
-        selected = gamma - 90;
+        //
+        // sutvarkom peršokimą tarp +90 ir -90
+        let diff = gamma - 90;
+
+        if (diff < -180) diff += 360;
+        if (diff > 180) diff -= 360;
+
+        if (diff < -90) diff += 180;
+        if (diff > 90) diff -= 180;
+
+        selected = diff;
       }
 
       const finalValue = invertVerticalAngle ? -selected : selected;
