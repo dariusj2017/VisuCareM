@@ -888,7 +888,7 @@ export default function App() {
                 <input
                   type="range"
                   min="1"
-                  max="5"
+                  max="10"
                   step="1"
                   value={horizontalRange}
                   onChange={(e) => setHorizontalRange(Number(e.target.value))}
