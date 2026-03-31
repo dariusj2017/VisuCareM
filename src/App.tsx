@@ -70,9 +70,11 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
 
-  const horizontalTolerance = 5;
-  const [verticalTolerance, setVerticalTolerance] = useState(5);
-  const [verticalRange, setVerticalRange] = useState(15);
+  // Default pagal tavo norą
+  const [horizontalTolerance, setHorizontalTolerance] = useState(1);
+  const [verticalTolerance, setVerticalTolerance] = useState(1);
+  const [horizontalRange, setHorizontalRange] = useState(5);
+  const [verticalRange, setVerticalRange] = useState(5);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -83,14 +85,15 @@ export default function App() {
   >("idle");
   const [levelEnabled, setLevelEnabled] = useState(false);
 
-  const horizontalDisplayDeg = 0;
+  const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
 
   const [alphaDeg, setAlphaDeg] = useState(0);
   const [betaDeg, setBetaDeg] = useState(0);
   const [gammaDeg, setGammaDeg] = useState(0);
 
-  const [verticalAngleSource, setVerticalAngleSource] = useState<"alpha" | "beta" | "gamma">("gamma");
+  const [verticalAngleSource, setVerticalAngleSource] =
+    useState<"alpha" | "beta" | "gamma">("gamma");
   const [invertVerticalAngle, setInvertVerticalAngle] = useState(false);
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
@@ -345,7 +348,7 @@ export default function App() {
     if (!levelEnabled) return;
 
     const smoothing = 0.22;
-    const deadbandDeg = 1.0;
+    const deadbandDeg = 0.2;
 
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const alpha = event.alpha ?? 0;
@@ -356,18 +359,21 @@ export default function App() {
       setBetaDeg(beta);
       setGammaDeg(gamma);
 
-      let selected = 0;
+      // Horizontalus pagal beta, centras 0
+      const horizontalBubbleDeg = clamp(beta, -horizontalRange, horizontalRange);
+      const horizontalSnapped =
+        Math.abs(horizontalBubbleDeg) <= deadbandDeg ? 0 : horizontalBubbleDeg;
+
+      setLevelHorizontalDeg((prev) => prev + (horizontalSnapped - prev) * smoothing);
+
+      // Vertikalus pagal gamma, centras apie +90 su peršokimo fix
+      let verticalSelected = 0;
 
       if (verticalAngleSource === "alpha") {
-        selected = alpha;
+        verticalSelected = alpha;
       } else if (verticalAngleSource === "beta") {
-        selected = beta - 90;
+        verticalSelected = beta - 90;
       } else {
-        // gamma vertikaliai ≈ +90
-        // į save: 89,88,87...
-        // nuo savęs: -89,-88,-87...
-        //
-        // sutvarkom peršokimą tarp +90 ir -90
         let diff = gamma - 90;
 
         if (diff < -180) diff += 360;
@@ -376,14 +382,15 @@ export default function App() {
         if (diff < -90) diff += 180;
         if (diff > 90) diff -= 180;
 
-        selected = diff;
+        verticalSelected = diff;
       }
 
-      const finalValue = invertVerticalAngle ? -selected : selected;
-      const verticalBubbleDeg = clamp(finalValue, -verticalRange, verticalRange);
-      const snapped = Math.abs(verticalBubbleDeg) <= deadbandDeg ? 0 : verticalBubbleDeg;
+      const verticalFinalValue = invertVerticalAngle ? -verticalSelected : verticalSelected;
+      const verticalBubbleDeg = clamp(verticalFinalValue, -verticalRange, verticalRange);
+      const verticalSnapped =
+        Math.abs(verticalBubbleDeg) <= deadbandDeg ? 0 : verticalBubbleDeg;
 
-      setLevelVerticalDeg((prev) => prev + (snapped - prev) * smoothing);
+      setLevelVerticalDeg((prev) => prev + (verticalSnapped - prev) * smoothing);
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -391,7 +398,13 @@ export default function App() {
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation, true);
     };
-  }, [levelEnabled, verticalRange, verticalAngleSource, invertVerticalAngle]);
+  }, [
+    levelEnabled,
+    horizontalRange,
+    verticalRange,
+    verticalAngleSource,
+    invertVerticalAngle,
+  ]);
 
   const getRelativeCoordinates = (
     clientX: number,
@@ -451,9 +464,14 @@ export default function App() {
     }
   }
 
+  const horizontalDisplayDeg = clamp(levelHorizontalDeg, -horizontalRange, horizontalRange);
   const verticalDisplayDeg = clamp(levelVerticalDeg, -verticalRange, verticalRange);
 
-  const horizontalOffset = 0;
+  const horizontalOffset = clamp(
+    (horizontalDisplayDeg / horizontalRange) * 90,
+    -90,
+    90
+  );
 
   const verticalOffset = clamp(
     (verticalDisplayDeg / verticalRange) * 90,
@@ -574,8 +592,8 @@ export default function App() {
             <div className="cross-level-center-dot" />
 
             <div className="cross-level-readout">
-              <div>Source: {verticalAngleSource}</div>
-              <div>{verticalDisplayDeg.toFixed(1)}°</div>
+              <div>H: {horizontalDisplayDeg.toFixed(1)}°</div>
+              <div>V: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
           </div>
         )}
@@ -824,27 +842,57 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical bubble tolerance</label>
+              <label className="settings-label">H tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
                   min="1"
-                  max="10"
+                  max="5"
                   step="1"
-                  value={verticalTolerance}
-                  onChange={(e) => setVerticalTolerance(Number(e.target.value))}
+                  value={horizontalTolerance}
+                  onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
                 />
-                <div className="tolerance-value">{verticalTolerance}°</div>
+                <div className="tolerance-value">±{horizontalTolerance}°</div>
               </div>
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Vertical bubble full scale</label>
+              <label className="settings-label">V tolerance</label>
               <div className="tolerance-row">
                 <input
                   type="range"
-                  min="5"
-                  max="30"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value={verticalTolerance}
+                  onChange={(e) => setVerticalTolerance(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{verticalTolerance}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value={horizontalRange}
+                  onChange={(e) => setHorizontalRange(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{horizontalRange}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
                   step="1"
                   value={verticalRange}
                   onChange={(e) => setVerticalRange(Number(e.target.value))}
@@ -923,6 +971,8 @@ export default function App() {
               <div className="settings-summary">alpha: {alphaDeg.toFixed(1)}°</div>
               <div className="settings-summary">beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">gamma: {gammaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Horizontal bubble: {levelHorizontalDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Vertical bubble: {levelVerticalDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
@@ -968,8 +1018,9 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Current vertical bubble</label>
-              <div className="settings-summary">{verticalDisplayDeg.toFixed(1)}°</div>
+              <label className="settings-label">Current bubbles</label>
+              <div className="settings-summary">H: {horizontalDisplayDeg.toFixed(1)}°</div>
+              <div className="settings-summary">V: {verticalDisplayDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
