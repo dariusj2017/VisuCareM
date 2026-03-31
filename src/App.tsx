@@ -6,6 +6,7 @@ import marker6bottom from "./assets/markers/marker6bottom.svg";
 import marker6center from "./assets/markers/marker6center.svg";
 
 type Step = "frontCapture" | "sideCapture" | "calibration";
+type CalibrationPanelTarget = "front" | "side";
 
 type FrontMarkerKey =
   | "topLeft9"
@@ -15,7 +16,6 @@ type FrontMarkerKey =
   | "bottomRight6";
 
 type SideMarkerKey = "sideTop9" | "sideBottom6";
-
 type MarkerKey = FrontMarkerKey | SideMarkerKey;
 
 type MarkerPoint = {
@@ -29,6 +29,12 @@ type MarkerDef = {
   svg: string;
   size: number;
   target: "front" | "side";
+};
+
+type PanelViewState = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
 };
 
 const frontMarkerDefs: MarkerDef[] = [
@@ -48,11 +54,37 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+function loadNumberSetting(key: string, fallback: number) {
+  if (typeof window === "undefined") return fallback;
+  const raw = localStorage.getItem(key);
+  if (raw === null) return fallback;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function loadBooleanSetting(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback;
+  const raw = localStorage.getItem(key);
+  if (raw === null) return fallback;
+  return raw === "true";
+}
+
+function loadStringSetting<T extends string>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  const raw = localStorage.getItem(key);
+  return (raw as T) || fallback;
+}
+
+function getDefaultPanelView(): PanelViewState {
+  return { scale: 1, offsetX: 0, offsetY: 0 };
+}
+
 export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const frontImageRef = useRef<HTMLImageElement | null>(null);
-  const sideImageRef = useRef<HTMLImageElement | null>(null);
+
+  const frontViewportRef = useRef<HTMLDivElement | null>(null);
+  const sideViewportRef = useRef<HTMLDivElement | null>(null);
 
   const horizontalLastUpdateRef = useRef(0);
   const horizontalSamplesRef = useRef<number[]>([]);
@@ -65,35 +97,69 @@ export default function App() {
     "user"
   );
 
-  const [rotation, setRotation] = useState(0);
-  const [flipHorizontal, setFlipHorizontal] = useState(false);
-  const [flipVertical, setFlipVertical] = useState(false);
+  const [rotation, setRotation] = useState(() =>
+    loadNumberSetting("vc_rotation", 0)
+  );
+  const [flipHorizontal, setFlipHorizontal] = useState(() =>
+    loadBooleanSetting("vc_flipHorizontal", false)
+  );
+  const [flipVertical, setFlipVertical] = useState(() =>
+    loadBooleanSetting("vc_flipVertical", false)
+  );
 
   const [showSettings, setShowSettings] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
 
-  // Default pagal tavo norą
-  const [horizontalTolerance, setHorizontalTolerance] = useState(1);
-  const [verticalTolerance, setVerticalTolerance] = useState(1);
-  const [horizontalRange, setHorizontalRange] = useState(10);
-  const [verticalRange, setVerticalRange] = useState(5);
+  const [horizontalTolerance, setHorizontalTolerance] = useState(() =>
+    loadNumberSetting("vc_horizontalTolerance", 1)
+  );
+  const [verticalTolerance, setVerticalTolerance] = useState(() =>
+    loadNumberSetting("vc_verticalTolerance", 1)
+  );
+  const [horizontalRange, setHorizontalRange] = useState(() =>
+    loadNumberSetting("vc_horizontalRange", 10)
+  );
+  const [verticalRange, setVerticalRange] = useState(() =>
+    loadNumberSetting("vc_verticalRange", 5)
+  );
 
-  // Stabilizacija
-  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.1);
-  const [verticalSmoothing, setVerticalSmoothing] = useState(0.22);
-  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(1.2);
-  const [verticalDeadbandDeg, setVerticalDeadbandDeg] = useState(0.2);
-  const [betaFilterStrength, setBetaFilterStrength] = useState(0.12);
+  const [horizontalSmoothing, setHorizontalSmoothing] = useState(() =>
+    loadNumberSetting("vc_horizontalSmoothing", 0.1)
+  );
+  const [verticalSmoothing, setVerticalSmoothing] = useState(() =>
+    loadNumberSetting("vc_verticalSmoothing", 0.22)
+  );
+  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(() =>
+    loadNumberSetting("vc_horizontalDeadbandDeg", 1.2)
+  );
+  const [verticalDeadbandDeg, setVerticalDeadbandDeg] = useState(() =>
+    loadNumberSetting("vc_verticalDeadbandDeg", 0.2)
+  );
+  const [betaFilterStrength, setBetaFilterStrength] = useState(() =>
+    loadNumberSetting("vc_betaFilterStrength", 0.12)
+  );
 
-  const [horizontalUpdateIntervalMs, setHorizontalUpdateIntervalMs] = useState(50);
-  const [horizontalMaxStepDeg, setHorizontalMaxStepDeg] = useState(0.3);
-  const [horizontalSampleWindow, setHorizontalSampleWindow] = useState(5);
+  const [horizontalUpdateIntervalMs, setHorizontalUpdateIntervalMs] = useState(() =>
+    loadNumberSetting("vc_horizontalUpdateIntervalMs", 50)
+  );
+  const [horizontalMaxStepDeg, setHorizontalMaxStepDeg] = useState(() =>
+    loadNumberSetting("vc_horizontalMaxStepDeg", 0.3)
+  );
+  const [horizontalSampleWindow, setHorizontalSampleWindow] = useState(() =>
+    loadNumberSetting("vc_horizontalSampleWindow", 5)
+  );
 
-  const [markerScale, setMarkerScale] = useState(1);
-  const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
+  const [markerScale, setMarkerScale] = useState(() =>
+    loadNumberSetting("vc_markerScale", 1)
+  );
+  const [markerStrokeWidth, setMarkerStrokeWidth] = useState(() =>
+    loadNumberSetting("vc_markerStrokeWidth", 1)
+  );
 
-  const [showLevelUI, setShowLevelUI] = useState(true);
+  const [showLevelUI, setShowLevelUI] = useState(() =>
+    loadBooleanSetting("vc_showLevelUI", true)
+  );
   const [levelPermissionState, setLevelPermissionState] = useState<
     "idle" | "granted" | "denied" | "unsupported"
   >("idle");
@@ -107,9 +173,12 @@ export default function App() {
   const [betaDeg, setBetaDeg] = useState(0);
   const [gammaDeg, setGammaDeg] = useState(0);
 
-  const [verticalAngleSource, setVerticalAngleSource] =
-    useState<"alpha" | "beta" | "gamma">("gamma");
-  const [invertVerticalAngle, setInvertVerticalAngle] = useState(false);
+  const [verticalAngleSource, setVerticalAngleSource] = useState<
+    "alpha" | "beta" | "gamma"
+  >(() => loadStringSetting("vc_verticalAngleSource", "gamma"));
+  const [invertVerticalAngle, setInvertVerticalAngle] = useState(() =>
+    loadBooleanSetting("vc_invertVerticalAngle", false)
+  );
 
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [sideImage, setSideImage] = useState<string | null>(null);
@@ -121,10 +190,72 @@ export default function App() {
     Partial<Record<SideMarkerKey, MarkerPoint>>
   >({});
 
+  const [activeCalibrationPanel, setActiveCalibrationPanel] =
+    useState<CalibrationPanelTarget>(() =>
+      loadStringSetting("vc_activeCalibrationPanel", "front")
+    );
+
+  const [frontView, setFrontView] = useState<PanelViewState>(() => getDefaultPanelView());
+  const [sideView, setSideView] = useState<PanelViewState>(() => getDefaultPanelView());
+
   const [draggingMarker, setDraggingMarker] = useState<{
     key: MarkerKey;
-    target: "front" | "side";
+    target: CalibrationPanelTarget;
   } | null>(null);
+
+  const [panningPanel, setPanningPanel] = useState<{
+    target: CalibrationPanelTarget;
+    startClientX: number;
+    startClientY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("vc_rotation", String(rotation));
+    localStorage.setItem("vc_flipHorizontal", String(flipHorizontal));
+    localStorage.setItem("vc_flipVertical", String(flipVertical));
+    localStorage.setItem("vc_horizontalTolerance", String(horizontalTolerance));
+    localStorage.setItem("vc_verticalTolerance", String(verticalTolerance));
+    localStorage.setItem("vc_horizontalRange", String(horizontalRange));
+    localStorage.setItem("vc_verticalRange", String(verticalRange));
+    localStorage.setItem("vc_horizontalSmoothing", String(horizontalSmoothing));
+    localStorage.setItem("vc_verticalSmoothing", String(verticalSmoothing));
+    localStorage.setItem("vc_horizontalDeadbandDeg", String(horizontalDeadbandDeg));
+    localStorage.setItem("vc_verticalDeadbandDeg", String(verticalDeadbandDeg));
+    localStorage.setItem("vc_betaFilterStrength", String(betaFilterStrength));
+    localStorage.setItem("vc_horizontalUpdateIntervalMs", String(horizontalUpdateIntervalMs));
+    localStorage.setItem("vc_horizontalMaxStepDeg", String(horizontalMaxStepDeg));
+    localStorage.setItem("vc_horizontalSampleWindow", String(horizontalSampleWindow));
+    localStorage.setItem("vc_markerScale", String(markerScale));
+    localStorage.setItem("vc_markerStrokeWidth", String(markerStrokeWidth));
+    localStorage.setItem("vc_showLevelUI", String(showLevelUI));
+    localStorage.setItem("vc_verticalAngleSource", verticalAngleSource);
+    localStorage.setItem("vc_invertVerticalAngle", String(invertVerticalAngle));
+    localStorage.setItem("vc_activeCalibrationPanel", activeCalibrationPanel);
+  }, [
+    rotation,
+    flipHorizontal,
+    flipVertical,
+    horizontalTolerance,
+    verticalTolerance,
+    horizontalRange,
+    verticalRange,
+    horizontalSmoothing,
+    verticalSmoothing,
+    horizontalDeadbandDeg,
+    verticalDeadbandDeg,
+    betaFilterStrength,
+    horizontalUpdateIntervalMs,
+    horizontalMaxStepDeg,
+    horizontalSampleWindow,
+    markerScale,
+    markerStrokeWidth,
+    showLevelUI,
+    verticalAngleSource,
+    invertVerticalAngle,
+    activeCalibrationPanel,
+  ]);
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -312,6 +443,9 @@ export default function App() {
       setSideImage(image);
       setFrontMarkers(createFrontInitialMarkers());
       setSideMarkers(createSideInitialMarkers());
+      setFrontView(getDefaultPanelView());
+      setSideView(getDefaultPanelView());
+      setActiveCalibrationPanel("front");
       setStep("calibration");
     }
   };
@@ -463,52 +597,170 @@ export default function App() {
     horizontalSampleWindow,
   ]);
 
+  const getPanelRef = (target: CalibrationPanelTarget) =>
+    target === "front" ? frontViewportRef.current : sideViewportRef.current;
+
+  const getPanelView = (target: CalibrationPanelTarget) =>
+    target === "front" ? frontView : sideView;
+
+  const setPanelView = (target: CalibrationPanelTarget, view: PanelViewState) => {
+    if (target === "front") {
+      setFrontView(view);
+    } else {
+      setSideView(view);
+    }
+  };
+
   const getRelativeCoordinates = (
     clientX: number,
     clientY: number,
-    target: "front" | "side"
+    target: CalibrationPanelTarget
   ): MarkerPoint | null => {
-    const ref = target === "front" ? frontImageRef.current : sideImageRef.current;
+    const ref = getPanelRef(target);
     if (!ref) return null;
 
     const rect = ref.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const { scale, offsetX, offsetY } = getPanelView(target);
 
-    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+    const localX = clientX - rect.left;
+    const localY = clientY - rect.top;
+
+    if (localX < 0 || localY < 0 || localX > rect.width || localY > rect.height) {
+      return null;
+    }
+
+    const x = (localX - offsetX) / scale;
+    const y = (localY - offsetY) / scale;
 
     return { x, y };
   };
 
-  const handleMarkerPointerDown = (key: MarkerKey, target: "front" | "side") => {
+  const handleMarkerPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    key: MarkerKey,
+    target: CalibrationPanelTarget
+  ) => {
+    e.stopPropagation();
+    setActiveCalibrationPanel(target);
     setDraggingMarker({ key, target });
   };
 
+  const handlePanelPointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    target: CalibrationPanelTarget
+  ) => {
+    if (draggingMarker) return;
+
+    setActiveCalibrationPanel(target);
+    const current = getPanelView(target);
+
+    setPanningPanel({
+      target,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startOffsetX: current.offsetX,
+      startOffsetY: current.offsetY,
+    });
+  };
+
   const handleCalibrationPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingMarker) return;
+    if (draggingMarker) {
+      const point = getRelativeCoordinates(
+        e.clientX,
+        e.clientY,
+        draggingMarker.target
+      );
+      if (!point) return;
 
-    const point = getRelativeCoordinates(
-      e.clientX,
-      e.clientY,
-      draggingMarker.target
-    );
-    if (!point) return;
+      if (draggingMarker.target === "front") {
+        setFrontMarkers((prev) => ({
+          ...prev,
+          [draggingMarker.key as FrontMarkerKey]: point,
+        }));
+      } else {
+        setSideMarkers((prev) => ({
+          ...prev,
+          [draggingMarker.key as SideMarkerKey]: point,
+        }));
+      }
+      return;
+    }
 
-    if (draggingMarker.target === "front") {
-      setFrontMarkers((prev) => ({
-        ...prev,
-        [draggingMarker.key as FrontMarkerKey]: point,
-      }));
-    } else {
-      setSideMarkers((prev) => ({
-        ...prev,
-        [draggingMarker.key as SideMarkerKey]: point,
-      }));
+    if (panningPanel) {
+      const dx = e.clientX - panningPanel.startClientX;
+      const dy = e.clientY - panningPanel.startClientY;
+
+      setPanelView(panningPanel.target, {
+        ...getPanelView(panningPanel.target),
+        offsetX: panningPanel.startOffsetX + dx,
+        offsetY: panningPanel.startOffsetY + dy,
+      });
     }
   };
 
   const handleCalibrationPointerUp = () => {
     setDraggingMarker(null);
+    setPanningPanel(null);
+  };
+
+  const zoomPanel = (target: CalibrationPanelTarget, delta: number) => {
+    const current = getPanelView(target);
+    const nextScale = clamp(current.scale + delta, 0.5, 4);
+
+    setPanelView(target, {
+      ...current,
+      scale: nextScale,
+    });
+  };
+
+  const resetPanelView = (target: CalibrationPanelTarget) => {
+    setPanelView(target, getDefaultPanelView());
+  };
+
+  const handlePanelWheel = (
+    e: React.WheelEvent<HTMLDivElement>,
+    target: CalibrationPanelTarget
+  ) => {
+    e.preventDefault();
+    setActiveCalibrationPanel(target);
+
+    const current = getPanelView(target);
+    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    const nextScale = clamp(current.scale + delta, 0.5, 4);
+
+    setPanelView(target, {
+      ...current,
+      scale: nextScale,
+    });
+  };
+
+  const resetSettings = () => {
+    const keys = [
+      "vc_rotation",
+      "vc_flipHorizontal",
+      "vc_flipVertical",
+      "vc_horizontalTolerance",
+      "vc_verticalTolerance",
+      "vc_horizontalRange",
+      "vc_verticalRange",
+      "vc_horizontalSmoothing",
+      "vc_verticalSmoothing",
+      "vc_horizontalDeadbandDeg",
+      "vc_verticalDeadbandDeg",
+      "vc_betaFilterStrength",
+      "vc_horizontalUpdateIntervalMs",
+      "vc_horizontalMaxStepDeg",
+      "vc_horizontalSampleWindow",
+      "vc_markerScale",
+      "vc_markerStrokeWidth",
+      "vc_showLevelUI",
+      "vc_verticalAngleSource",
+      "vc_invertVerticalAngle",
+      "vc_activeCalibrationPanel",
+    ];
+
+    keys.forEach((key) => localStorage.removeItem(key));
+    window.location.reload();
   };
 
   let frontScale: number | null = null;
@@ -538,6 +790,9 @@ export default function App() {
 
   const horizontalOk = Math.abs(horizontalDisplayDeg) <= horizontalTolerance;
   const verticalOk = Math.abs(verticalDisplayDeg) <= verticalTolerance;
+
+  const frontDimmed = step === "calibration" && activeCalibrationPanel !== "front";
+  const sideDimmed = step === "calibration" && activeCalibrationPanel !== "side";
 
   return (
     <div className="app">
@@ -739,94 +994,283 @@ export default function App() {
 
         {step === "calibration" && (
           <div
-            className="calibration-layout"
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr",
+              gap: "10px",
+              padding: "10px",
+              background: "#101010",
+              zIndex: 30,
+            }}
             onPointerMove={handleCalibrationPointerMove}
             onPointerUp={handleCalibrationPointerUp}
             onPointerLeave={handleCalibrationPointerUp}
           >
-            <div className="calibration-front-panel">
-              <div className="panel-header">
+            <div
+              style={{
+                position: "relative",
+                background: "#1a1a1a",
+                borderRadius: "14px",
+                overflow: "hidden",
+                opacity: frontDimmed ? 0.35 : 1,
+                transition: "opacity 0.2s ease",
+                outline: activeCalibrationPanel === "front" ? "2px solid #1267d6" : "none",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 6,
+                  padding: "10px 14px",
+                  background: "rgba(0,0,0,0.48)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <span>FRONT</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => setActiveCalibrationPanel("front")}
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => zoomPanel("front", 0.1)}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => zoomPanel("front", -0.1)}
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => resetPanelView("front")}
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
-              <div className="calibration-image-wrap">
-                {frontImage && (
-                  <img
-                    ref={frontImageRef}
-                    src={frontImage}
-                    alt="Front calibration"
-                    className="calibration-image"
-                  />
-                )}
-
-                {frontMarkerDefs.map((marker) => {
-                  const point = frontMarkers[marker.key as FrontMarkerKey];
-                  if (!point) return null;
-
-                  return (
-                    <div
-                      key={marker.key}
-                      className="svg-marker"
+              <div
+                ref={frontViewportRef}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  cursor: panningPanel?.target === "front" ? "grabbing" : "grab",
+                  touchAction: "none",
+                }}
+                onPointerDown={(e) => handlePanelPointerDown(e, "front")}
+                onWheel={(e) => handlePanelWheel(e, "front")}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    transform: `translate(${frontView.offsetX}px, ${frontView.offsetY}px) scale(${frontView.scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  {frontImage && (
+                    <img
+                      src={frontImage}
+                      alt="Front calibration"
+                      draggable={false}
                       style={{
-                        left: `${point.x}px`,
-                        top: `${point.y}px`,
-                        width: `${marker.size * markerScale}px`,
-                        height: `${marker.size * markerScale}px`,
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        background: "#111",
+                        pointerEvents: "none",
+                        userSelect: "none",
                       }}
-                      onPointerDown={() =>
-                        handleMarkerPointerDown(marker.key, "front")
-                      }
-                      title={marker.label}
-                    >
-                      <img src={marker.svg} alt={marker.label} draggable={false} />
-                    </div>
-                  );
-                })}
+                    />
+                  )}
+
+                  {frontMarkerDefs.map((marker) => {
+                    const point = frontMarkers[marker.key as FrontMarkerKey];
+                    if (!point) return null;
+
+                    return (
+                      <div
+                        key={marker.key}
+                        className="svg-marker"
+                        style={{
+                          left: `${point.x}px`,
+                          top: `${point.y}px`,
+                          width: `${marker.size * markerScale}px`,
+                          height: `${marker.size * markerScale}px`,
+                        }}
+                        onPointerDown={(e) =>
+                          handleMarkerPointerDown(e, marker.key, "front")
+                        }
+                        title={marker.label}
+                      >
+                        <img src={marker.svg} alt={marker.label} draggable={false} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="calibration-side-panel">
-              <div className="panel-header">
+            <div
+              style={{
+                position: "relative",
+                background: "#1a1a1a",
+                borderRadius: "14px",
+                overflow: "hidden",
+                opacity: sideDimmed ? 0.35 : 1,
+                transition: "opacity 0.2s ease",
+                outline: activeCalibrationPanel === "side" ? "2px solid #1267d6" : "none",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 6,
+                  padding: "10px 14px",
+                  background: "rgba(0,0,0,0.48)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <span>SIDE</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => setActiveCalibrationPanel("side")}
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => zoomPanel("side", 0.1)}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => zoomPanel("side", -0.1)}
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    className="toolbar-btn"
+                    onClick={() => resetPanelView("side")}
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
-              <div className="calibration-image-wrap">
-                {sideImage && (
-                  <img
-                    ref={sideImageRef}
-                    src={sideImage}
-                    alt="Side calibration"
-                    className="calibration-image"
-                  />
-                )}
-
-                {sideMarkerDefs.map((marker) => {
-                  const point = sideMarkers[marker.key as SideMarkerKey];
-                  if (!point) return null;
-
-                  return (
-                    <div
-                      key={marker.key}
-                      className="svg-marker"
+              <div
+                ref={sideViewportRef}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  cursor: panningPanel?.target === "side" ? "grabbing" : "grab",
+                  touchAction: "none",
+                }}
+                onPointerDown={(e) => handlePanelPointerDown(e, "side")}
+                onWheel={(e) => handlePanelWheel(e, "side")}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    transform: `translate(${sideView.offsetX}px, ${sideView.offsetY}px) scale(${sideView.scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  {sideImage && (
+                    <img
+                      src={sideImage}
+                      alt="Side calibration"
+                      draggable={false}
                       style={{
-                        left: `${point.x}px`,
-                        top: `${point.y}px`,
-                        width: `${marker.size * markerScale}px`,
-                        height: `${marker.size * markerScale}px`,
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        background: "#111",
+                        pointerEvents: "none",
+                        userSelect: "none",
                       }}
-                      onPointerDown={() =>
-                        handleMarkerPointerDown(marker.key, "side")
-                      }
-                      title={marker.label}
-                    >
-                      <img src={marker.svg} alt={marker.label} draggable={false} />
-                    </div>
-                  );
-                })}
+                    />
+                  )}
+
+                  {sideMarkerDefs.map((marker) => {
+                    const point = sideMarkers[marker.key as SideMarkerKey];
+                    if (!point) return null;
+
+                    return (
+                      <div
+                        key={marker.key}
+                        className="svg-marker"
+                        style={{
+                          left: `${point.x}px`,
+                          top: `${point.y}px`,
+                          width: `${marker.size * markerScale}px`,
+                          height: `${marker.size * markerScale}px`,
+                        }}
+                        onPointerDown={(e) =>
+                          handleMarkerPointerDown(e, marker.key, "side")
+                        }
+                        title={marker.label}
+                      >
+                        <img src={marker.svg} alt={marker.label} draggable={false} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="calibration-toolbar">
+            <div
+              style={{
+                position: "absolute",
+                left: 10,
+                right: 10,
+                bottom: 10,
+                zIndex: 50,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
               <button
                 className="toolbar-btn"
                 type="button"
@@ -835,7 +1279,15 @@ export default function App() {
                 Retake Side
               </button>
 
-              <div className="calibration-scale-box">
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.92)",
+                  color: "#111",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  fontWeight: 600,
+                }}
+              >
                 {frontScale
                   ? `Front scale: ${frontScale.toFixed(3)} mm/px`
                   : "Front scale: n/a"}
@@ -915,7 +1367,9 @@ export default function App() {
               <div className="settings-summary">Raw source: beta</div>
               <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Filtered beta: {filteredBeta.toFixed(2)}°</div>
-              <div className="settings-summary">Current H bubble: {levelHorizontalDeg.toFixed(1)}°</div>
+              <div className="settings-summary">
+                Current H bubble: {levelHorizontalDeg.toFixed(1)}°
+              </div>
             </div>
 
             <div className="settings-group">
@@ -1044,7 +1498,9 @@ export default function App() {
               <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Raw gamma: {gammaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Selected source: {verticalAngleSource}</div>
-              <div className="settings-summary">Current V bubble: {levelVerticalDeg.toFixed(1)}°</div>
+              <div className="settings-summary">
+                Current V bubble: {levelVerticalDeg.toFixed(1)}°
+              </div>
             </div>
 
             <div className="settings-group">
@@ -1151,6 +1607,9 @@ export default function App() {
               <div className="settings-summary">
                 Front scale: {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need calibration"}
               </div>
+              <div className="settings-summary">
+                Active panel: {activeCalibrationPanel}
+              </div>
             </div>
 
             <div className="settings-group">
@@ -1181,9 +1640,13 @@ export default function App() {
                 />
                 <div className="tolerance-value">{markerStrokeWidth.toFixed(1)}x</div>
               </div>
-              <div className="settings-hint">
-                Future-ready UI for SVG stroke control.
-              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Stored settings</label>
+              <button type="button" className="settings-btn" onClick={resetSettings}>
+                Reset saved settings
+              </button>
             </div>
           </aside>
         )}
