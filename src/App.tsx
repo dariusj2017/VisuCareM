@@ -4,6 +4,21 @@ import logoImage from "./img/regos-prieziuros-logotipas.png";
 import marker9top from "./assets/markers/marker9top.svg";
 import marker6bottom from "./assets/markers/marker6bottom.svg";
 import marker6center from "./assets/markers/marker6center.svg";
+import markerTemplatesSheet from "./assets/marker-templates.png";
+import {
+  buildMarkerTemplatesFromSheet,
+  detectFrontMarkers,
+  detectSideMarkers,
+  imageUrlToCanvas,
+  type FrontDetectedMarkers,
+  type SideDetectedMarkers,
+} from "./vision/markerDetection";
+
+declare global {
+  interface Window {
+    cv: any;
+  }
+}
 
 type Step = "frontCapture" | "sideCapture" | "calibration";
 type CalibrationPanelTarget = "front" | "side";
@@ -16,6 +31,7 @@ type FrontMarkerKey =
   | "bottomRight6";
 
 type SideMarkerKey = "sideTop9" | "sideBottom6";
+
 type MarkerKey = FrontMarkerKey | SideMarkerKey;
 
 type MarkerPoint = {
@@ -82,12 +98,24 @@ function getDefaultPanelView(): PanelViewState {
 export default function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
   const frontViewportRef = useRef<HTMLDivElement | null>(null);
   const sideViewportRef = useRef<HTMLDivElement | null>(null);
 
   const horizontalLastUpdateRef = useRef(0);
   const horizontalSamplesRef = useRef<number[]>([]);
+  const templateSheetImageRef = useRef<HTMLImageElement | null>(null);
+  const templateCanvasesRef = useRef<{
+    big: HTMLCanvasElement;
+    center: HTMLCanvasElement;
+    bottom: HTMLCanvasElement;
+  } | null>(null);
+
+  const [cvReady, setCvReady] = useState(false);
+  const [detectStatus, setDetectStatus] = useState("");
+  const [frontDetectedMarkers, setFrontDetectedMarkers] =
+    useState<FrontDetectedMarkers | null>(null);
+  const [sideDetectedMarkers, setSideDetectedMarkers] =
+    useState<SideDetectedMarkers | null>(null);
 
   const [step, setStep] = useState<Step>("frontCapture");
   const [error, setError] = useState("");
@@ -266,6 +294,30 @@ export default function App() {
     return () => window.removeEventListener("resize", checkOrientation);
   }, []);
 
+  useEffect(() => {
+    const img = new Image();
+    img.src = markerTemplatesSheet;
+    img.onload = () => {
+      templateSheetImageRef.current = img;
+      try {
+        templateCanvasesRef.current = buildMarkerTemplatesFromSheet(img);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (window.cv && typeof window.cv.imread === "function") {
+        setCvReady(true);
+        window.clearInterval(timer);
+      }
+    }, 250);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   const startCamera = async () => {
     try {
       setError("");
@@ -435,6 +487,7 @@ export default function App() {
 
     if (step === "frontCapture") {
       setFrontImage(image);
+      setFrontDetectedMarkers(null);
       setStep("sideCapture");
       return;
     }
@@ -445,6 +498,8 @@ export default function App() {
       setSideMarkers(createSideInitialMarkers());
       setFrontView(getDefaultPanelView());
       setSideView(getDefaultPanelView());
+      setFrontDetectedMarkers(null);
+      setSideDetectedMarkers(null);
       setActiveCalibrationPanel("front");
       setStep("calibration");
     }
@@ -734,6 +789,74 @@ export default function App() {
     });
   };
 
+  const handleDetectMarkers = async () => {
+    try {
+      if (!cvReady) {
+        setDetectStatus("OpenCV dar neužsikrovė");
+        return;
+      }
+
+      if (!templateCanvasesRef.current) {
+        setDetectStatus("Marker template dar neužkrautas");
+        return;
+      }
+
+      if (!frontImage) {
+        setDetectStatus("Nėra front nuotraukos");
+        return;
+      }
+
+      setDetectStatus("Ieškau markerių...");
+
+      const frontCanvas = await imageUrlToCanvas(frontImage);
+      const detectedFront = detectFrontMarkers(frontCanvas, templateCanvasesRef.current);
+
+      setFrontDetectedMarkers(detectedFront);
+
+      const nextFrontMarkers: Partial<Record<FrontMarkerKey, MarkerPoint>> = {
+        ...(detectedFront.topLeft9 ? { topLeft9: detectedFront.topLeft9 } : {}),
+        ...(detectedFront.topRight9 ? { topRight9: detectedFront.topRight9 } : {}),
+        ...(detectedFront.topCenter6 ? { topCenter6: detectedFront.topCenter6 } : {}),
+        ...(detectedFront.bottomLeft6 ? { bottomLeft6: detectedFront.bottomLeft6 } : {}),
+        ...(detectedFront.bottomRight6 ? { bottomRight6: detectedFront.bottomRight6 } : {}),
+      };
+
+      if (Object.keys(nextFrontMarkers).length > 0) {
+        setFrontMarkers((prev) => ({
+          ...prev,
+          ...nextFrontMarkers,
+        }));
+      }
+
+      if (sideImage) {
+        const sideCanvas = await imageUrlToCanvas(sideImage);
+        const detectedSide = detectSideMarkers(sideCanvas, {
+          big: templateCanvasesRef.current.big,
+          bottom: templateCanvasesRef.current.bottom,
+        });
+
+        setSideDetectedMarkers(detectedSide);
+
+        const nextSideMarkers: Partial<Record<SideMarkerKey, MarkerPoint>> = {
+          ...(detectedSide.sideTop9 ? { sideTop9: detectedSide.sideTop9 } : {}),
+          ...(detectedSide.sideBottom6 ? { sideBottom6: detectedSide.sideBottom6 } : {}),
+        };
+
+        if (Object.keys(nextSideMarkers).length > 0) {
+          setSideMarkers((prev) => ({
+            ...prev,
+            ...nextSideMarkers,
+          }));
+        }
+      }
+
+      setDetectStatus("Markeriai aptikti");
+    } catch (err) {
+      console.error(err);
+      setDetectStatus("Markerių aptikimas nepavyko");
+    }
+  };
+
   const resetSettings = () => {
     const keys = [
       "vc_rotation",
@@ -793,6 +916,27 @@ export default function App() {
 
   const frontDimmed = step === "calibration" && activeCalibrationPanel !== "front";
   const sideDimmed = step === "calibration" && activeCalibrationPanel !== "side";
+
+  const renderDebugDot = (point?: MarkerPoint, color = "#00e5ff") => {
+    if (!point) return null;
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: `${point.x - 6}px`,
+          top: `${point.y - 6}px`,
+          width: "12px",
+          height: "12px",
+          borderRadius: "50%",
+          background: color,
+          border: "2px solid white",
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.5)",
+          pointerEvents: "none",
+        }}
+      />
+    );
+  };
 
   return (
     <div className="app">
@@ -1106,6 +1250,12 @@ export default function App() {
                     />
                   )}
 
+                  {renderDebugDot(frontDetectedMarkers?.topLeft9)}
+                  {renderDebugDot(frontDetectedMarkers?.topRight9)}
+                  {renderDebugDot(frontDetectedMarkers?.topCenter6)}
+                  {renderDebugDot(frontDetectedMarkers?.bottomLeft6)}
+                  {renderDebugDot(frontDetectedMarkers?.bottomRight6)}
+
                   {frontMarkerDefs.map((marker) => {
                     const point = frontMarkers[marker.key as FrontMarkerKey];
                     if (!point) return null;
@@ -1231,6 +1381,9 @@ export default function App() {
                     />
                   )}
 
+                  {renderDebugDot(sideDetectedMarkers?.sideTop9, "#7CFF6B")}
+                  {renderDebugDot(sideDetectedMarkers?.sideBottom6, "#7CFF6B")}
+
                   {sideMarkerDefs.map((marker) => {
                     const point = sideMarkers[marker.key as SideMarkerKey];
                     if (!point) return null;
@@ -1279,18 +1432,42 @@ export default function App() {
                 Retake Side
               </button>
 
-              <div
-                style={{
-                  background: "rgba(255,255,255,0.92)",
-                  color: "#111",
-                  padding: "12px 16px",
-                  borderRadius: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {frontScale
-                  ? `Front scale: ${frontScale.toFixed(3)} mm/px`
-                  : "Front scale: n/a"}
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <button
+                  className="toolbar-btn"
+                  type="button"
+                  onClick={handleDetectMarkers}
+                >
+                  Detect markers
+                </button>
+
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.92)",
+                    color: "#111",
+                    padding: "12px 16px",
+                    borderRadius: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  {frontScale
+                    ? `Front scale: ${frontScale.toFixed(3)} mm/px`
+                    : "Front scale: n/a"}
+                </div>
+
+                {detectStatus && (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.92)",
+                      color: "#111",
+                      padding: "12px 16px",
+                      borderRadius: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {detectStatus}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1315,6 +1492,9 @@ export default function App() {
               </div>
               <div className="settings-summary">
                 Permission: {levelPermissionState}
+              </div>
+              <div className="settings-summary">
+                OpenCV: {cvReady ? "READY" : "loading..."}
               </div>
             </div>
 
@@ -1367,9 +1547,7 @@ export default function App() {
               <div className="settings-summary">Raw source: beta</div>
               <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Filtered beta: {filteredBeta.toFixed(2)}°</div>
-              <div className="settings-summary">
-                Current H bubble: {levelHorizontalDeg.toFixed(1)}°
-              </div>
+              <div className="settings-summary">Current H bubble: {levelHorizontalDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
@@ -1498,9 +1676,7 @@ export default function App() {
               <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Raw gamma: {gammaDeg.toFixed(1)}°</div>
               <div className="settings-summary">Selected source: {verticalAngleSource}</div>
-              <div className="settings-summary">
-                Current V bubble: {levelVerticalDeg.toFixed(1)}°
-              </div>
+              <div className="settings-summary">Current V bubble: {levelVerticalDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
@@ -1609,6 +1785,9 @@ export default function App() {
               </div>
               <div className="settings-summary">
                 Active panel: {activeCalibrationPanel}
+              </div>
+              <div className="settings-summary">
+                Detect status: {detectStatus || "-"}
               </div>
             </div>
 
