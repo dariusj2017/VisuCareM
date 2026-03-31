@@ -70,17 +70,16 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
 
-  // Default pagal tavo norą
   const [horizontalTolerance, setHorizontalTolerance] = useState(1);
   const [verticalTolerance, setVerticalTolerance] = useState(1);
-  const [horizontalRange, setHorizontalRange] = useState(5);
+  const [horizontalRange, setHorizontalRange] = useState(10);
   const [verticalRange, setVerticalRange] = useState(5);
 
-  // Smoothing / deadband
-  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.22);
+  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.12);
   const [verticalSmoothing, setVerticalSmoothing] = useState(0.22);
-  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(0.6);
+  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(1.0);
   const [verticalDeadbandDeg, setVerticalDeadbandDeg] = useState(0.2);
+  const [betaFilterStrength, setBetaFilterStrength] = useState(0.1);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -93,6 +92,7 @@ export default function App() {
 
   const [levelHorizontalDeg, setLevelHorizontalDeg] = useState(0);
   const [levelVerticalDeg, setLevelVerticalDeg] = useState(0);
+  const [filteredBeta, setFilteredBeta] = useState(0);
 
   const [alphaDeg, setAlphaDeg] = useState(0);
   const [betaDeg, setBetaDeg] = useState(0);
@@ -362,16 +362,20 @@ export default function App() {
       setBetaDeg(beta);
       setGammaDeg(gamma);
 
-      // Horizontalus pagal beta, centras 0
-      const horizontalBubbleDeg = clamp(beta, -horizontalRange, horizontalRange);
-      const horizontalSnapped =
-        Math.abs(horizontalBubbleDeg) <= horizontalDeadbandDeg ? 0 : horizontalBubbleDeg;
+      setFilteredBeta((prevFiltered) => {
+        const nextFiltered = prevFiltered + (beta - prevFiltered) * betaFilterStrength;
 
-      setLevelHorizontalDeg(
-        (prev) => prev + (horizontalSnapped - prev) * horizontalSmoothing
-      );
+        const horizontalBubbleDeg = clamp(nextFiltered, -horizontalRange, horizontalRange);
+        const horizontalSnapped =
+          Math.abs(horizontalBubbleDeg) <= horizontalDeadbandDeg ? 0 : horizontalBubbleDeg;
 
-      // Vertikalus pagal gamma, centras apie +90 su peršokimo fix
+        setLevelHorizontalDeg(
+          (prev) => prev + (horizontalSnapped - prev) * horizontalSmoothing
+        );
+
+        return nextFiltered;
+      });
+
       let verticalSelected = 0;
 
       if (verticalAngleSource === "alpha") {
@@ -415,6 +419,7 @@ export default function App() {
     verticalSmoothing,
     horizontalDeadbandDeg,
     verticalDeadbandDeg,
+    betaFilterStrength,
   ]);
 
   const getRelativeCoordinates = (
@@ -889,7 +894,7 @@ export default function App() {
                   type="range"
                   min="1"
                   max="10"
-                  step="2"
+                  step="1"
                   value={horizontalRange}
                   onChange={(e) => setHorizontalRange(Number(e.target.value))}
                 />
@@ -973,6 +978,21 @@ export default function App() {
             </div>
 
             <div className="settings-group">
+              <label className="settings-label">Beta pre-filter</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.3"
+                  step="0.01"
+                  value={betaFilterStrength}
+                  onChange={(e) => setBetaFilterStrength(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{betaFilterStrength.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
               <label className="settings-label">Marker size</label>
               <div className="tolerance-row">
                 <input
@@ -1042,6 +1062,7 @@ export default function App() {
               <div className="settings-summary">alpha: {alphaDeg.toFixed(1)}°</div>
               <div className="settings-summary">beta: {betaDeg.toFixed(1)}°</div>
               <div className="settings-summary">gamma: {gammaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">filtered beta: {filteredBeta.toFixed(2)}°</div>
               <div className="settings-summary">Horizontal bubble: {levelHorizontalDeg.toFixed(1)}°</div>
               <div className="settings-summary">Vertical bubble: {levelVerticalDeg.toFixed(1)}°</div>
             </div>
