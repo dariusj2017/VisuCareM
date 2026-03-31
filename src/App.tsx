@@ -76,6 +76,12 @@ export default function App() {
   const [horizontalRange, setHorizontalRange] = useState(5);
   const [verticalRange, setVerticalRange] = useState(5);
 
+  // Smoothing / deadband
+  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.22);
+  const [verticalSmoothing, setVerticalSmoothing] = useState(0.22);
+  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(0.6);
+  const [verticalDeadbandDeg, setVerticalDeadbandDeg] = useState(0.2);
+
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
 
@@ -347,9 +353,6 @@ export default function App() {
   useEffect(() => {
     if (!levelEnabled) return;
 
-    const smoothing = 0.22;
-    const deadbandDeg = 0.2;
-
     const handleOrientation = (event: DeviceOrientationEvent) => {
       const alpha = event.alpha ?? 0;
       const beta = event.beta ?? 0;
@@ -362,9 +365,11 @@ export default function App() {
       // Horizontalus pagal beta, centras 0
       const horizontalBubbleDeg = clamp(beta, -horizontalRange, horizontalRange);
       const horizontalSnapped =
-        Math.abs(horizontalBubbleDeg) <= deadbandDeg ? 0 : horizontalBubbleDeg;
+        Math.abs(horizontalBubbleDeg) <= horizontalDeadbandDeg ? 0 : horizontalBubbleDeg;
 
-      setLevelHorizontalDeg((prev) => prev + (horizontalSnapped - prev) * smoothing);
+      setLevelHorizontalDeg(
+        (prev) => prev + (horizontalSnapped - prev) * horizontalSmoothing
+      );
 
       // Vertikalus pagal gamma, centras apie +90 su peršokimo fix
       let verticalSelected = 0;
@@ -388,9 +393,11 @@ export default function App() {
       const verticalFinalValue = invertVerticalAngle ? -verticalSelected : verticalSelected;
       const verticalBubbleDeg = clamp(verticalFinalValue, -verticalRange, verticalRange);
       const verticalSnapped =
-        Math.abs(verticalBubbleDeg) <= deadbandDeg ? 0 : verticalBubbleDeg;
+        Math.abs(verticalBubbleDeg) <= verticalDeadbandDeg ? 0 : verticalBubbleDeg;
 
-      setLevelVerticalDeg((prev) => prev + (verticalSnapped - prev) * smoothing);
+      setLevelVerticalDeg(
+        (prev) => prev + (verticalSnapped - prev) * verticalSmoothing
+      );
     };
 
     window.addEventListener("deviceorientation", handleOrientation, true);
@@ -404,6 +411,10 @@ export default function App() {
     verticalRange,
     verticalAngleSource,
     invertVerticalAngle,
+    horizontalSmoothing,
+    verticalSmoothing,
+    horizontalDeadbandDeg,
+    verticalDeadbandDeg,
   ]);
 
   const getRelativeCoordinates = (
@@ -898,6 +909,66 @@ export default function App() {
                   onChange={(e) => setVerticalRange(Number(e.target.value))}
                 />
                 <div className="tolerance-value">±{verticalRange}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H smoothing</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.5"
+                  step="0.01"
+                  value={horizontalSmoothing}
+                  onChange={(e) => setHorizontalSmoothing(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalSmoothing.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V smoothing</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.5"
+                  step="0.01"
+                  value={verticalSmoothing}
+                  onChange={(e) => setVerticalSmoothing(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{verticalSmoothing.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H deadband</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={horizontalDeadbandDeg}
+                  onChange={(e) => setHorizontalDeadbandDeg(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalDeadbandDeg.toFixed(1)}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V deadband</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={verticalDeadbandDeg}
+                  onChange={(e) => setVerticalDeadbandDeg(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{verticalDeadbandDeg.toFixed(1)}°</div>
               </div>
             </div>
 
