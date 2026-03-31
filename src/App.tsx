@@ -54,6 +54,9 @@ export default function App() {
   const frontImageRef = useRef<HTMLImageElement | null>(null);
   const sideImageRef = useRef<HTMLImageElement | null>(null);
 
+  const horizontalLastUpdateRef = useRef(0);
+  const horizontalSamplesRef = useRef<number[]>([]);
+
   const [step, setStep] = useState<Step>("frontCapture");
   const [error, setError] = useState("");
   const [isCameraOn, setIsCameraOn] = useState(false);
@@ -70,16 +73,22 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
 
+  // Default pagal tavo norą
   const [horizontalTolerance, setHorizontalTolerance] = useState(1);
   const [verticalTolerance, setVerticalTolerance] = useState(1);
   const [horizontalRange, setHorizontalRange] = useState(10);
   const [verticalRange, setVerticalRange] = useState(5);
 
-  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.12);
+  // Stabilizacija
+  const [horizontalSmoothing, setHorizontalSmoothing] = useState(0.1);
   const [verticalSmoothing, setVerticalSmoothing] = useState(0.22);
-  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(1.0);
+  const [horizontalDeadbandDeg, setHorizontalDeadbandDeg] = useState(1.2);
   const [verticalDeadbandDeg, setVerticalDeadbandDeg] = useState(0.2);
-  const [betaFilterStrength, setBetaFilterStrength] = useState(0.1);
+  const [betaFilterStrength, setBetaFilterStrength] = useState(0.12);
+
+  const [horizontalUpdateIntervalMs, setHorizontalUpdateIntervalMs] = useState(50);
+  const [horizontalMaxStepDeg, setHorizontalMaxStepDeg] = useState(0.3);
+  const [horizontalSampleWindow, setHorizontalSampleWindow] = useState(5);
 
   const [markerScale, setMarkerScale] = useState(1);
   const [markerStrokeWidth, setMarkerStrokeWidth] = useState(1);
@@ -363,15 +372,44 @@ export default function App() {
       setGammaDeg(gamma);
 
       setFilteredBeta((prevFiltered) => {
-        const nextFiltered = prevFiltered + (beta - prevFiltered) * betaFilterStrength;
+        const now = performance.now();
 
-        const horizontalBubbleDeg = clamp(nextFiltered, -horizontalRange, horizontalRange);
-        const horizontalSnapped =
-          Math.abs(horizontalBubbleDeg) <= horizontalDeadbandDeg ? 0 : horizontalBubbleDeg;
+        const nextFiltered =
+          prevFiltered + (beta - prevFiltered) * betaFilterStrength;
 
-        setLevelHorizontalDeg(
-          (prev) => prev + (horizontalSnapped - prev) * horizontalSmoothing
-        );
+        horizontalSamplesRef.current.push(nextFiltered);
+        if (horizontalSamplesRef.current.length > horizontalSampleWindow) {
+          horizontalSamplesRef.current.shift();
+        }
+
+        if (now - horizontalLastUpdateRef.current >= horizontalUpdateIntervalMs) {
+          horizontalLastUpdateRef.current = now;
+
+          const samples = horizontalSamplesRef.current;
+          const avg =
+            samples.reduce((sum, value) => sum + value, 0) /
+            Math.max(samples.length, 1);
+
+          const horizontalBubbleDeg = clamp(avg, -horizontalRange, horizontalRange);
+          const horizontalSnapped =
+            Math.abs(horizontalBubbleDeg) <= horizontalDeadbandDeg
+              ? 0
+              : horizontalBubbleDeg;
+
+          setLevelHorizontalDeg((prev) => {
+            const smoothed =
+              prev + (horizontalSnapped - prev) * horizontalSmoothing;
+
+            const delta = smoothed - prev;
+            const limitedDelta = clamp(
+              delta,
+              -horizontalMaxStepDeg,
+              horizontalMaxStepDeg
+            );
+
+            return prev + limitedDelta;
+          });
+        }
 
         return nextFiltered;
       });
@@ -420,6 +458,9 @@ export default function App() {
     horizontalDeadbandDeg,
     verticalDeadbandDeg,
     betaFilterStrength,
+    horizontalUpdateIntervalMs,
+    horizontalMaxStepDeg,
+    horizontalSampleWindow,
   ]);
 
   const getRelativeCoordinates = (
@@ -808,19 +849,25 @@ export default function App() {
             <div className="settings-title">Settings</div>
 
             <div className="settings-group">
-              <label className="settings-label">Step</label>
-              <div className="settings-summary">{step}</div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Camera</label>
+              <label className="settings-label">General</label>
+              <div className="settings-summary">Step: {step}</div>
               <div className="settings-summary">
-                {cameraFacingMode === "user" ? "Front camera" : "Back camera"}
+                Camera: {cameraFacingMode === "user" ? "Front camera" : "Back camera"}
+              </div>
+              <div className="settings-summary">Rotation: {rotation}°</div>
+              <div className="settings-summary">
+                Horizontal flip: {flipHorizontal ? "ON" : "OFF"}
+              </div>
+              <div className="settings-summary">
+                Vertical flip: {flipVertical ? "ON" : "OFF"}
+              </div>
+              <div className="settings-summary">
+                Permission: {levelPermissionState}
               </div>
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">View transform</label>
+              <label className="settings-label">General controls</label>
 
               <div className="transform-controls">
                 <button type="button" className="settings-btn" onClick={rotate90}>
@@ -829,9 +876,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  className={`settings-btn ${
-                    flipHorizontal ? "settings-btn-active" : ""
-                  }`}
+                  className={`settings-btn ${flipHorizontal ? "settings-btn-active" : ""}`}
                   onClick={toggleHorizontalFlip}
                 >
                   Flip H
@@ -839,22 +884,38 @@ export default function App() {
 
                 <button
                   type="button"
-                  className={`settings-btn ${
-                    flipVertical ? "settings-btn-active" : ""
-                  }`}
+                  className={`settings-btn ${flipVertical ? "settings-btn-active" : ""}`}
                   onClick={toggleVerticalFlip}
                 >
                   Flip V
                 </button>
               </div>
 
-              <div className="settings-summary">Rotation: {rotation}°</div>
-              <div className="settings-summary">
-                Horizontal flip: {flipHorizontal ? "ON" : "OFF"}
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={`settings-btn ${showLevelUI ? "settings-btn-active" : ""}`}
+                  onClick={() => setShowLevelUI((prev) => !prev)}
+                >
+                  {showLevelUI ? "Hide level UI" : "Show level UI"}
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${levelEnabled ? "settings-btn-active" : ""}`}
+                  onClick={requestLevelPermission}
+                >
+                  Enable live level
+                </button>
               </div>
-              <div className="settings-summary">
-                Vertical flip: {flipVertical ? "ON" : "OFF"}
-              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Horizontal bubble</label>
+              <div className="settings-summary">Raw source: beta</div>
+              <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Filtered beta: {filteredBeta.toFixed(2)}°</div>
+              <div className="settings-summary">Current H bubble: {levelHorizontalDeg.toFixed(1)}°</div>
             </div>
 
             <div className="settings-group">
@@ -869,21 +930,6 @@ export default function App() {
                   onChange={(e) => setHorizontalTolerance(Number(e.target.value))}
                 />
                 <div className="tolerance-value">±{horizontalTolerance}°</div>
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">V tolerance</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  step="1"
-                  value={verticalTolerance}
-                  onChange={(e) => setVerticalTolerance(Number(e.target.value))}
-                />
-                <div className="tolerance-value">±{verticalTolerance}°</div>
               </div>
             </div>
 
@@ -903,21 +949,6 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">V full scale</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  step="1"
-                  value={verticalRange}
-                  onChange={(e) => setVerticalRange(Number(e.target.value))}
-                />
-                <div className="tolerance-value">±{verticalRange}°</div>
-              </div>
-            </div>
-
-            <div className="settings-group">
               <label className="settings-label">H smoothing</label>
               <div className="tolerance-row">
                 <input
@@ -929,21 +960,6 @@ export default function App() {
                   onChange={(e) => setHorizontalSmoothing(Number(e.target.value))}
                 />
                 <div className="tolerance-value">{horizontalSmoothing.toFixed(2)}</div>
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">V smoothing</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="0.02"
-                  max="0.5"
-                  step="0.01"
-                  value={verticalSmoothing}
-                  onChange={(e) => setVerticalSmoothing(Number(e.target.value))}
-                />
-                <div className="tolerance-value">{verticalSmoothing.toFixed(2)}</div>
               </div>
             </div>
 
@@ -963,6 +979,159 @@ export default function App() {
             </div>
 
             <div className="settings-group">
+              <label className="settings-label">H beta pre-filter</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.3"
+                  step="0.01"
+                  value={betaFilterStrength}
+                  onChange={(e) => setBetaFilterStrength(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{betaFilterStrength.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H update interval</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="16"
+                  max="120"
+                  step="1"
+                  value={horizontalUpdateIntervalMs}
+                  onChange={(e) => setHorizontalUpdateIntervalMs(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalUpdateIntervalMs} ms</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H max step</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1"
+                  step="0.05"
+                  value={horizontalMaxStepDeg}
+                  onChange={(e) => setHorizontalMaxStepDeg(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalMaxStepDeg.toFixed(2)}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">H sample window</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={horizontalSampleWindow}
+                  onChange={(e) => setHorizontalSampleWindow(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{horizontalSampleWindow}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Vertical bubble</label>
+              <div className="settings-summary">Raw alpha: {alphaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Raw beta: {betaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Raw gamma: {gammaDeg.toFixed(1)}°</div>
+              <div className="settings-summary">Selected source: {verticalAngleSource}</div>
+              <div className="settings-summary">Current V bubble: {levelVerticalDeg.toFixed(1)}°</div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Vertical source</label>
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "alpha" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("alpha")}
+                >
+                  alpha
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "beta" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("beta")}
+                >
+                  beta
+                </button>
+
+                <button
+                  type="button"
+                  className={`settings-btn ${verticalAngleSource === "gamma" ? "settings-btn-active" : ""}`}
+                  onClick={() => setVerticalAngleSource("gamma")}
+                >
+                  gamma
+                </button>
+              </div>
+
+              <div className="toggle-row" style={{ marginTop: "8px" }}>
+                <button
+                  type="button"
+                  className={`settings-btn ${invertVerticalAngle ? "settings-btn-active" : ""}`}
+                  onClick={() => setInvertVerticalAngle((prev) => !prev)}
+                >
+                  {invertVerticalAngle ? "Invert ON" : "Invert OFF"}
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V tolerance</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value={verticalTolerance}
+                  onChange={(e) => setVerticalTolerance(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{verticalTolerance}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V full scale</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value={verticalRange}
+                  onChange={(e) => setVerticalRange(Number(e.target.value))}
+                />
+                <div className="tolerance-value">±{verticalRange}°</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">V smoothing</label>
+              <div className="tolerance-row">
+                <input
+                  type="range"
+                  min="0.02"
+                  max="0.5"
+                  step="0.01"
+                  value={verticalSmoothing}
+                  onChange={(e) => setVerticalSmoothing(Number(e.target.value))}
+                />
+                <div className="tolerance-value">{verticalSmoothing.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="settings-group">
               <label className="settings-label">V deadband</label>
               <div className="tolerance-row">
                 <input
@@ -978,17 +1147,9 @@ export default function App() {
             </div>
 
             <div className="settings-group">
-              <label className="settings-label">Beta pre-filter</label>
-              <div className="tolerance-row">
-                <input
-                  type="range"
-                  min="0.02"
-                  max="0.3"
-                  step="0.01"
-                  value={betaFilterStrength}
-                  onChange={(e) => setBetaFilterStrength(Number(e.target.value))}
-                />
-                <div className="tolerance-value">{betaFilterStrength.toFixed(2)}</div>
+              <label className="settings-label">Calibration / markers</label>
+              <div className="settings-summary">
+                Front scale: {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need calibration"}
               </div>
             </div>
 
@@ -1018,107 +1179,10 @@ export default function App() {
                   value={markerStrokeWidth}
                   onChange={(e) => setMarkerStrokeWidth(Number(e.target.value))}
                 />
-                <div className="tolerance-value">
-                  {markerStrokeWidth.toFixed(1)}x
-                </div>
+                <div className="tolerance-value">{markerStrokeWidth.toFixed(1)}x</div>
               </div>
               <div className="settings-hint">
                 Future-ready UI for SVG stroke control.
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Level UI</label>
-
-              <div className="toggle-row">
-                <button
-                  type="button"
-                  className={`settings-btn ${
-                    showLevelUI ? "settings-btn-active" : ""
-                  }`}
-                  onClick={() => setShowLevelUI((prev) => !prev)}
-                >
-                  {showLevelUI ? "Hide level UI" : "Show level UI"}
-                </button>
-
-                <button
-                  type="button"
-                  className={`settings-btn ${
-                    levelEnabled ? "settings-btn-active" : ""
-                  }`}
-                  onClick={requestLevelPermission}
-                >
-                  Enable live level
-                </button>
-              </div>
-
-              <div className="settings-summary">
-                Permission: {levelPermissionState}
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Raw device angles</label>
-              <div className="settings-summary">alpha: {alphaDeg.toFixed(1)}°</div>
-              <div className="settings-summary">beta: {betaDeg.toFixed(1)}°</div>
-              <div className="settings-summary">gamma: {gammaDeg.toFixed(1)}°</div>
-              <div className="settings-summary">filtered beta: {filteredBeta.toFixed(2)}°</div>
-              <div className="settings-summary">Horizontal bubble: {levelHorizontalDeg.toFixed(1)}°</div>
-              <div className="settings-summary">Vertical bubble: {levelVerticalDeg.toFixed(1)}°</div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Vertical bubble source</label>
-
-              <div className="toggle-row">
-                <button
-                  type="button"
-                  className={`settings-btn ${verticalAngleSource === "alpha" ? "settings-btn-active" : ""}`}
-                  onClick={() => setVerticalAngleSource("alpha")}
-                >
-                  alpha
-                </button>
-
-                <button
-                  type="button"
-                  className={`settings-btn ${verticalAngleSource === "beta" ? "settings-btn-active" : ""}`}
-                  onClick={() => setVerticalAngleSource("beta")}
-                >
-                  beta
-                </button>
-
-                <button
-                  type="button"
-                  className={`settings-btn ${verticalAngleSource === "gamma" ? "settings-btn-active" : ""}`}
-                  onClick={() => setVerticalAngleSource("gamma")}
-                >
-                  gamma
-                </button>
-              </div>
-
-              <div className="settings-summary">Selected: {verticalAngleSource}</div>
-
-              <div className="toggle-row" style={{ marginTop: "8px" }}>
-                <button
-                  type="button"
-                  className={`settings-btn ${invertVerticalAngle ? "settings-btn-active" : ""}`}
-                  onClick={() => setInvertVerticalAngle((prev) => !prev)}
-                >
-                  {invertVerticalAngle ? "Invert ON" : "Invert OFF"}
-                </button>
-              </div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Current bubbles</label>
-              <div className="settings-summary">H: {horizontalDisplayDeg.toFixed(1)}°</div>
-              <div className="settings-summary">V: {verticalDisplayDeg.toFixed(1)}°</div>
-            </div>
-
-            <div className="settings-group">
-              <label className="settings-label">Front scale</label>
-              <div className="settings-summary">
-                {frontScale ? `${frontScale.toFixed(3)} mm/px` : "Need calibration"}
               </div>
             </div>
           </aside>
