@@ -7,7 +7,7 @@ body,
 #root {
   margin: 0;
   width: 100%;
-  min-height: 100%;
+  min-height: 100dvh;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -22,7 +22,7 @@ input {
 }
 
 .app {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #dfe3e6;
 }
 
@@ -96,7 +96,7 @@ input {
 .viewer {
   position: relative;
   width: 100%;
-  height: calc(100vh - 72px);
+  height: calc(100dvh - 72px);
   overflow: hidden;
   background: #cfd4d8;
 }
@@ -116,7 +116,7 @@ input {
   top: 14px;
   right: 14px;
   width: min(360px, calc(100vw - 28px));
-  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
   overflow: auto;
   z-index: 200;
   background: rgba(255, 255, 255, 0.96);
@@ -133,6 +133,13 @@ input {
 
 .settings-group {
   margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .settings-label {
@@ -398,11 +405,6 @@ input {
   border-radius: 50%;
   border: 3px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-  will-change: transform;
-}
-
-.cross-level-bubble-horizontal {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .cross-level-bubble-vertical {
@@ -435,8 +437,7 @@ input {
   border-radius: 10px;
   font-size: 13px;
   text-align: center;
-  min-width: 120px;
-  line-height: 1.35;
+  min-width: 90px;
 }
 
 /* Calibration */

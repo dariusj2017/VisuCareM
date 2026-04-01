@@ -112,6 +112,7 @@ export default function App() {
 
   const [cvReady, setCvReady] = useState(false);
   const [detectStatus, setDetectStatus] = useState("");
+  const [showTemplateDebug, setShowTemplateDebug] = useState(false);
   const [frontDetectedMarkers, setFrontDetectedMarkers] =
     useState<FrontDetectedMarkers | null>(null);
   const [sideDetectedMarkers, setSideDetectedMarkers] =
@@ -414,7 +415,13 @@ export default function App() {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else {
-        await document.documentElement.requestFullscreen();
+        const root = document.documentElement as HTMLElement;
+
+        if (root.requestFullscreen) {
+          await root.requestFullscreen({ navigationUI: "hide" } as FullscreenOptions);
+        } else {
+          await root.requestFullscreen();
+        }
 
         const orientationApi = screen.orientation as ScreenOrientation & {
           lock?: (orientation: string) => Promise<void>;
@@ -424,7 +431,7 @@ export default function App() {
           try {
             await orientationApi.lock("landscape");
           } catch {
-            // Safari may ignore this
+            // iPad / Safari gali ignoruoti
           }
         }
       }
@@ -808,9 +815,15 @@ export default function App() {
 
       setDetectStatus("Ieškau markerių...");
 
+      console.log("cvReady", cvReady);
+      console.log("templateCanvases", templateCanvasesRef.current);
+      console.log("frontImage exists", Boolean(frontImage));
+      console.log("sideImage exists", Boolean(sideImage));
+
       const frontCanvas = await imageUrlToCanvas(frontImage);
       const detectedFront = detectFrontMarkers(frontCanvas, templateCanvasesRef.current);
 
+      console.log("detectedFront", detectedFront);
       setFrontDetectedMarkers(detectedFront);
 
       const nextFrontMarkers: Partial<Record<FrontMarkerKey, MarkerPoint>> = {
@@ -835,6 +848,7 @@ export default function App() {
           bottom: templateCanvasesRef.current.bottom,
         });
 
+        console.log("detectedSide", detectedSide);
         setSideDetectedMarkers(detectedSide);
 
         const nextSideMarkers: Partial<Record<SideMarkerKey, MarkerPoint>> = {
@@ -1152,6 +1166,69 @@ export default function App() {
             onPointerUp={handleCalibrationPointerUp}
             onPointerLeave={handleCalibrationPointerUp}
           >
+            {showTemplateDebug && templateCanvasesRef.current && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  left: 10,
+                  zIndex: 80,
+                  display: "flex",
+                  gap: 10,
+                  padding: 10,
+                  borderRadius: 12,
+                  background: "rgba(0,0,0,0.75)",
+                  color: "#fff",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ marginBottom: 6, fontSize: 12 }}>9 mm top</div>
+                  <img
+                    src={templateCanvasesRef.current.big.toDataURL("image/png")}
+                    alt="big template"
+                    style={{
+                      width: 90,
+                      height: "auto",
+                      display: "block",
+                      background: "#fff",
+                      borderRadius: 6,
+                    }}
+                  />
+                </div>
+
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ marginBottom: 6, fontSize: 12 }}>6 mm center</div>
+                  <img
+                    src={templateCanvasesRef.current.center.toDataURL("image/png")}
+                    alt="center template"
+                    style={{
+                      width: 90,
+                      height: "auto",
+                      display: "block",
+                      background: "#fff",
+                      borderRadius: 6,
+                    }}
+                  />
+                </div>
+
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ marginBottom: 6, fontSize: 12 }}>6 mm bottom</div>
+                  <img
+                    src={templateCanvasesRef.current.bottom.toDataURL("image/png")}
+                    alt="bottom template"
+                    style={{
+                      width: 90,
+                      height: "auto",
+                      display: "block",
+                      background: "#fff",
+                      borderRadius: 6,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
             <div
               style={{
                 position: "relative",
@@ -1432,7 +1509,7 @@ export default function App() {
                 Retake Side
               </button>
 
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   className="toolbar-btn"
                   type="button"
@@ -1788,6 +1865,19 @@ export default function App() {
               </div>
               <div className="settings-summary">
                 Detect status: {detectStatus || "-"}
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <label className="settings-label">Template debug</label>
+              <div className="toggle-row">
+                <button
+                  type="button"
+                  className={`settings-btn ${showTemplateDebug ? "settings-btn-active" : ""}`}
+                  onClick={() => setShowTemplateDebug((prev) => !prev)}
+                >
+                  {showTemplateDebug ? "Hide template debug" : "Show template debug"}
+                </button>
               </div>
             </div>
 
